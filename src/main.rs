@@ -1,6 +1,5 @@
 use clap::Parser;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use serde::Deserialize;
 use std::path::PathBuf;
 
 fn main() -> anyhow::Result<()> {
@@ -15,12 +14,23 @@ struct Cli {
 
 impl Cli {
 	pub fn run(self) -> anyhow::Result<()> {
-		let name_list = File::open(self.name_list)?;
+		let mut csv_reader = csv::Reader::from_path(self.name_list)?;
 
-		for line in BufReader::new(name_list).lines() {
+		for line in csv_reader.deserialize::<(String, usize, Gender)>() {
 			let line = line?;
-			println!("{line}");
+			println!("{line:?}");
 		}
 		Ok(())
 	}
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Gender {
+	#[serde(alias = "w")]
+	Female,
+	#[serde(alias = "m")]
+	Male,
+	#[serde(alias = "n")]
+	Both,
 }
