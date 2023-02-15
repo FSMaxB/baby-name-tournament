@@ -10,12 +10,13 @@ pub fn parse_csv(path: &Path) -> anyhow::Result<impl Iterator<Item = anyhow::Res
 #[derive(Clone, Debug, Deserialize)]
 pub struct NameRecord {
 	pub name: String,
-	pub count: usize,
+	pub count: u32,
 	pub gender: Gender,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
+#[sqlx(rename_all = "snake_case")]
 pub enum Gender {
 	#[serde(alias = "w")]
 	Female,
