@@ -1,8 +1,11 @@
 use crate::csv_parser::parse_csv;
+use crate::utils::stream_blocking_iterator;
 use clap::Parser;
+use futures_util::StreamExt;
 use std::path::PathBuf;
 
 mod csv_parser;
+mod utils;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
@@ -27,14 +30,11 @@ impl Cli {
 		use Command::*;
 		match self.command {
 			Print { name_list } => {
-				tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-					for line in parse_csv(&name_list)? {
-						let line = line?;
-						println!("{line:?}");
-					}
-					Ok(())
-				})
-				.await??;
+				let mut name_stream = stream_blocking_iterator(parse_csv(&name_list)?);
+				while let Some(line) = name_stream.next().await {
+					let line = line?;
+					println!("{line:?}");
+				}
 			}
 		}
 		Ok(())

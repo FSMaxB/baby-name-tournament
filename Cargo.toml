@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+async-channel = "1"
 clap = { version = "4", features = ["derive"] }
 csv = "1"
+futures-util = { version = "0.3", default-features = false }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "macros"] }
