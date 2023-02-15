@@ -4,9 +4,11 @@ use std::path::PathBuf;
 
 mod csv_parser;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> anyhow::Result<()> {
 	let cli = Cli::parse();
-	cli.run()
+
+	cli.run().await
 }
 
 #[derive(Debug, Parser)]
@@ -21,17 +23,20 @@ enum Command {
 }
 
 impl Cli {
-	pub fn run(self) -> anyhow::Result<()> {
+	pub async fn run(self) -> anyhow::Result<()> {
 		use Command::*;
 		match self.command {
 			Print { name_list } => {
-				for line in parse_csv(&name_list)? {
-					let line = line?;
-					println!("{line:?}");
-				}
+				tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+					for line in parse_csv(&name_list)? {
+						let line = line?;
+						println!("{line:?}");
+					}
+					Ok(())
+				})
+				.await??;
 			}
 		}
-
 		Ok(())
 	}
 }
