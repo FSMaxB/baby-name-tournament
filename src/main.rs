@@ -1,4 +1,4 @@
-use crate::csv_parser::NameRecord;
+use crate::csv_parser::parse_csv;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -25,9 +25,7 @@ impl Cli {
 		use Command::*;
 		match self.command {
 			Print { name_list } => {
-				let mut csv_reader = csv::Reader::from_path(name_list)?;
-
-				for line in csv_reader.deserialize::<NameRecord>() {
+				for line in parse_csv(&name_list)? {
 					let line = line?;
 					println!("{line:?}");
 				}

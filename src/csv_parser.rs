@@ -1,4 +1,11 @@
 use serde::Deserialize;
+use std::path::Path;
+
+pub fn parse_csv(path: &Path) -> anyhow::Result<impl Iterator<Item = anyhow::Result<NameRecord>>> {
+	// FIXME: Can I turn this ? into an  error result as part of the iterator itself?
+	let reader = csv::Reader::from_path(path)?;
+	Ok(reader.into_deserialize().map(|result| result.map_err(Into::into)))
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct NameRecord {
