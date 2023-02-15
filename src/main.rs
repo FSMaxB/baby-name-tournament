@@ -1,6 +1,8 @@
+use crate::csv_parser::NameRecord;
 use clap::Parser;
-use serde::Deserialize;
 use std::path::PathBuf;
+
+mod csv_parser;
 
 fn main() -> anyhow::Result<()> {
 	let cli = Cli::parse();
@@ -16,21 +18,10 @@ impl Cli {
 	pub fn run(self) -> anyhow::Result<()> {
 		let mut csv_reader = csv::Reader::from_path(self.name_list)?;
 
-		for line in csv_reader.deserialize::<(String, usize, Gender)>() {
+		for line in csv_reader.deserialize::<NameRecord>() {
 			let line = line?;
 			println!("{line:?}");
 		}
 		Ok(())
 	}
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Gender {
-	#[serde(alias = "w")]
-	Female,
-	#[serde(alias = "m")]
-	Male,
-	#[serde(alias = "n")]
-	Both,
 }
