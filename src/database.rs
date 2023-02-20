@@ -1,4 +1,5 @@
 use crate::csv_parser::{Gender, NameRecord};
+use futures_util::{stream, Stream, TryStreamExt};
 use sqlx::SqlitePool;
 use url::Url;
 
@@ -65,4 +66,46 @@ pub async fn insert_name_record(
 	.execute(database_pool)
 	.await?;
 	Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct Name {
+	pub name: String,
+	pub gender: Gender,
+}
+
+pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> {
+	const BULK_SIZE: i64 = 10;
+	let database_pool = database_pool.clone();
+	futures_util::stream::try_unfold(String::new(), move |names_after| {
+		let database_pool = database_pool.clone();
+		async move {
+			let names = sqlx::query_as!(
+				Name,
+				r#"
+			SELECT
+				name,
+				gender as "gender: Gender"
+			FROM names
+			WHERE
+				name > $1
+				AND CASE $2
+					WHEN 'both' THEN TRUE
+					WHEN 'female' THEN gender != 'male'
+					WHEN 'male' THEN gender != 'female'
+				END
+			ORDER BY name ASC
+			LIMIT $3
+			"#,
+				names_after,
+				gender,
+				BULK_SIZE,
+			)
+			.fetch_all(&database_pool)
+			.await?;
+			Ok::<_, sqlx::Error>(names.last().cloned().map(|Name { name, .. }| (names, name)))
+		}
+	})
+	.map_ok(|names: Vec<Name>| stream::iter(names.into_iter().map(Ok)))
+	.try_flatten()
 }

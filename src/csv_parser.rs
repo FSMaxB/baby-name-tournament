@@ -14,9 +14,10 @@ pub struct NameRecord {
 	pub gender: Gender,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, sqlx::Type)]
+#[derive(Clone, Copy, Debug, Deserialize, sqlx::Type, strum::EnumString)]
 #[serde(rename_all = "snake_case")]
 #[sqlx(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum Gender {
 	#[serde(alias = "w")]
 	Female,
