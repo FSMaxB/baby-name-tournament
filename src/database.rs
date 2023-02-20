@@ -77,7 +77,7 @@ pub struct Name {
 pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> {
 	const BULK_SIZE: i64 = 10;
 	let database_pool = database_pool.clone();
-	futures_util::stream::try_unfold(String::new(), move |names_after| {
+	stream::try_unfold(String::new(), move |names_after| {
 		let database_pool = database_pool.clone();
 		async move {
 			let names = sqlx::query_as!(
