@@ -33,7 +33,7 @@ struct Cli {
 
 #[derive(Debug, Parser)]
 enum Command {
-	Print { name_list: PathBuf },
+	Parse { name_list: PathBuf },
 	Ingest { name_list: PathBuf },
 }
 
@@ -41,7 +41,7 @@ impl Cli {
 	pub async fn run(self, database_pool: SqlitePool) -> anyhow::Result<()> {
 		use Command::*;
 		match self.command {
-			Print { name_list } => {
+			Parse { name_list } => {
 				let mut name_stream = stream_blocking_iterator(parse_csv(&name_list)?);
 				while let Some(line) = name_stream.next().await {
 					let line = line?;
