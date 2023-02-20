@@ -1,5 +1,5 @@
 use crate::csv_parser::{parse_csv, Gender};
-use crate::database::{initialize_database, insert_name_record, list_all, upsert_name};
+use crate::database::{initialize_database, insert_name_record, list_all, read_random, upsert_name};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
@@ -36,6 +36,7 @@ enum Command {
 	Parse { name_list: PathBuf },
 	Ingest { name_list: PathBuf },
 	ListAll { gender: Gender },
+	Random { gender: Gender },
 }
 
 impl Cli {
@@ -66,6 +67,10 @@ impl Cli {
 						std::future::ready(Ok(()))
 					})
 					.await?;
+			}
+			Random { gender } => {
+				let name = read_random(gender, &database_pool).await?;
+				println!("{name:?}")
 			}
 		}
 		Ok(())

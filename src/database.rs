@@ -109,3 +109,26 @@ pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item 
 	.map_ok(|names: Vec<Name>| stream::iter(names.into_iter().map(Ok)))
 	.try_flatten()
 }
+
+pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
+	sqlx::query_as!(
+		Name,
+		r#"
+		SELECT
+			name as "name!",
+			gender as "gender!: Gender"
+		FROM names
+		WHERE
+			CASE $1
+				WHEN 'both' THEN TRUE
+				WHEN 'female' THEN gender != 'male'
+				WHEN 'male' THEN gender != 'female'
+			END
+		ORDER BY RANDOM()
+		LIMIT 1
+		"#,
+		gender,
+	)
+	.fetch_one(database_pool)
+	.await
+}
