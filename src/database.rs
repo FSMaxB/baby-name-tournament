@@ -1,4 +1,5 @@
 use crate::csv_parser::{Gender, NameRecord};
+use crate::similarities::Similarity;
 use futures_util::{stream, Stream, TryStreamExt};
 use sqlx::SqlitePool;
 use url::Url;
@@ -37,6 +38,43 @@ pub async fn upsert_name(name: &str, gender: Gender, database_pool: &SqlitePool)
 		"#,
 		name,
 		gender,
+	)
+	.execute(database_pool)
+	.await?;
+	Ok(())
+}
+
+pub async fn upsert_similarity(
+	Similarity {
+		a,
+		b,
+		levenshtein,
+		longest_common_substring,
+		longest_common_substring_similarity,
+	}: Similarity,
+	database_pool: &SqlitePool,
+) -> sqlx::Result<()> {
+	sqlx::query!(
+		r#"
+		INSERT INTO similarities (
+			a,
+			b,
+			levenshtein,
+			longest_common_substring,
+			longest_common_substring_similarity
+		) VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO
+		UPDATE
+		SET
+			levenshtein = $3,
+			longest_common_substring = $4,
+			longest_common_substring_similarity = $5
+		"#,
+		a,
+		b,
+		levenshtein,
+		longest_common_substring,
+		longest_common_substring_similarity,
 	)
 	.execute(database_pool)
 	.await?;
@@ -107,6 +145,44 @@ pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item 
 		}
 	})
 	.map_ok(|names: Vec<Name>| stream::iter(names.into_iter().map(Ok)))
+	.try_flatten()
+}
+
+pub fn list_all_pairs(database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<(String, String)>> {
+	#[derive(Clone, Default)]
+	struct Pair {
+		a: String,
+		b: String,
+	}
+
+	const BULK_SIZE: i64 = 1000;
+	let database_pool = database_pool.clone();
+	stream::try_unfold(Pair::default(), move |Pair { a: last_a, b: last_b }| {
+		let database_pool = database_pool.clone();
+		async move {
+			let pairs = sqlx::query_as!(
+				Pair,
+				r#"
+				SELECT
+					a.name as a,
+					b.name as b
+				FROM names as a
+					CROSS JOIN names as b
+				WHERE
+					(a.name, b.name) > ($1, $2)
+				ORDER BY a.name, b.name
+				LIMIT $3
+			"#,
+				last_a,
+				last_b,
+				BULK_SIZE,
+			)
+			.fetch_all(&database_pool)
+			.await?;
+			Ok::<_, sqlx::Error>(pairs.last().cloned().map(|pair| (pairs, pair)))
+		}
+	})
+	.map_ok(|pairs: Vec<Pair>| stream::iter(pairs.into_iter().map(|Pair { a, b }| Ok((a, b)))))
 	.try_flatten()
 }
 

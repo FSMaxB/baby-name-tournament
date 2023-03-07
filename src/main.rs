@@ -1,5 +1,8 @@
 use crate::csv_parser::{parse_csv, Gender};
-use crate::database::{initialize_database, insert_name_record, list_all, read_random, upsert_name};
+use crate::database::{
+	initialize_database, insert_name_record, list_all, list_all_pairs, read_random, upsert_name, upsert_similarity,
+};
+use crate::similarities::Similarity;
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
@@ -10,6 +13,7 @@ use url::Url;
 
 mod csv_parser;
 mod database;
+mod similarities;
 mod utils;
 
 #[tokio::main]
@@ -36,6 +40,7 @@ enum Command {
 	Parse { name_list: PathBuf },
 	Ingest { name_list: PathBuf },
 	ListAll { gender: Gender },
+	Similarities,
 	Random { gender: Gender },
 }
 
@@ -65,6 +70,15 @@ impl Cli {
 					.try_for_each(|name| {
 						println!("{name:?}");
 						std::future::ready(Ok(()))
+					})
+					.await?;
+			}
+			Similarities => {
+				list_all_pairs(&database_pool)
+					.try_for_each(|(a, b)| {
+						let similarity = Similarity::calculate(a, b);
+						println!("{similarity:?}");
+						upsert_similarity(similarity, &database_pool)
 					})
 					.await?;
 			}
