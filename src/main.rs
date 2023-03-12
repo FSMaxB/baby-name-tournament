@@ -9,7 +9,6 @@ use clap::Parser;
 use futures_util::{StreamExt, TryStreamExt};
 use sqlx::SqlitePool;
 use std::path::PathBuf;
-use url::Url;
 
 mod csv_parser;
 mod database;
@@ -22,15 +21,15 @@ async fn main() -> anyhow::Result<()> {
 
 	let cli = Cli::parse();
 
-	let database_pool = initialize_database(&cli.database_url).await?;
+	let database_pool = initialize_database(&cli.database_path).await?;
 
 	cli.run(database_pool).await
 }
 
 #[derive(Debug, Parser)]
 struct Cli {
-	#[clap(long, env = "DATABASE_URL")]
-	database_url: Url,
+	#[clap(long, env = "DATABASE_PATH")]
+	database_path: PathBuf,
 	#[clap(subcommand)]
 	command: Command,
 }

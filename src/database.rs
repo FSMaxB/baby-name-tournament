@@ -1,15 +1,24 @@
 use crate::csv_parser::{Gender, NameRecord};
 use crate::similarities::Similarity;
 use futures_util::{stream, Stream, TryStreamExt};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::SqlitePool;
-use url::Url;
+use std::path::Path;
 
-pub async fn initialize_database(url: &Url) -> anyhow::Result<SqlitePool> {
-	let pool = SqlitePool::connect(url.as_str()).await?;
+pub async fn initialize_database(path: &Path) -> anyhow::Result<SqlitePool> {
+	let pool = SqlitePool::connect_with(connect_options(path)).await?;
 
 	sqlx::migrate!("./migrations").run(&pool).await?;
 
 	Ok(pool)
+}
+
+fn connect_options(path: &Path) -> SqliteConnectOptions {
+	SqliteConnectOptions::new()
+		.filename(path)
+		.journal_mode(SqliteJournalMode::Wal)
+		.synchronous(SqliteSynchronous::Normal)
+		.create_if_missing(true)
 }
 
 pub async fn upsert_name(name: &str, gender: Gender, database_pool: &SqlitePool) -> anyhow::Result<()> {
