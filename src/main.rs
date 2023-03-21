@@ -3,16 +3,20 @@ use crate::database::{
 	initialize_database, insert_name_record, list_all, list_all_pairs, read_random, upsert_name, upsert_similarity,
 };
 use crate::similarities::Similarity;
+use crate::tui::{run_tui, TuiMode};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
 use futures_util::{StreamExt, TryStreamExt};
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 use sqlx::SqlitePool;
 use std::path::PathBuf;
 
 mod csv_parser;
 mod database;
 mod similarities;
+mod tui;
 mod utils;
 
 #[tokio::main]
@@ -41,6 +45,7 @@ enum Command {
 	ListAll { gender: Gender },
 	Similarities,
 	Random { gender: Gender },
+	Tui,
 }
 
 impl Cli {
@@ -84,6 +89,14 @@ impl Cli {
 			Random { gender } => {
 				let name = read_random(gender, &database_pool).await?;
 				println!("{name:?}")
+			}
+			Tui => {
+				let _tui_mode = TuiMode::enable()?;
+
+				let backend = CrosstermBackend::new(std::io::stdout());
+				let terminal = Terminal::new(backend)?;
+
+				run_tui(terminal).await?;
 			}
 		}
 		Ok(())
