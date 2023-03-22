@@ -96,7 +96,7 @@ impl Cli {
 				let backend = CrosstermBackend::new(std::io::stdout());
 				let terminal = Terminal::new(backend)?;
 
-				run_tui(terminal).await?;
+				run_tui(database_pool, terminal).await?;
 			}
 		}
 		Ok(())
