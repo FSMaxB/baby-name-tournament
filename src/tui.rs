@@ -8,12 +8,11 @@ use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use futures_util::{StreamExt, TryStreamExt};
 use ratatui::backend::Backend;
-use ratatui::layout::{Alignment, Constraint, Layout};
+use ratatui::layout::{Alignment, Constraint};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table, TableState};
 use ratatui::{Frame, Terminal};
 use sqlx::SqlitePool;
-use std::ops::Add;
 
 pub async fn run_tui(
 	database_pool: SqlitePool,

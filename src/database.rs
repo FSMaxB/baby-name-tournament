@@ -5,7 +5,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::SqlitePool;
 use std::path::Path;
 
-pub async fn initialize_database(path: &Path) -> anyhow::Result<SqlitePool> {
+pub async fn initialize(path: &Path) -> anyhow::Result<SqlitePool> {
 	let pool = SqlitePool::connect_with(connect_options(path)).await?;
 
 	sqlx::migrate!("./migrations").run(&pool).await?;
