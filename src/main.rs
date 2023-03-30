@@ -13,6 +13,7 @@ use tokio::runtime;
 
 mod csv_parser;
 mod database;
+mod gui;
 mod similarities;
 mod tui;
 mod utils;
@@ -41,6 +42,7 @@ enum Command {
 	Similarities,
 	Random { gender: Gender },
 	Tui,
+	Gui,
 }
 
 impl Cli {
@@ -48,7 +50,6 @@ impl Cli {
 		use Command::*;
 
 		let runtime = runtime::Builder::new_current_thread().enable_all().build()?;
-
 		let database_pool = runtime.block_on(database::initialize(&self.database_path))?;
 
 		match self.command {
@@ -69,6 +70,9 @@ impl Cli {
 			}
 			Tui => {
 				runtime.block_on(tui(database_pool))?;
+			}
+			Gui => {
+				gui::start(runtime, database_pool);
 			}
 		}
 		Ok(())
