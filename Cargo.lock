@@ -56,7 +56,6 @@ dependencies = [
  "csv",
  "dotenvy",
  "futures-util",
- "gtk4",
  "libadwaita",
  "ratatui",
  "serde",

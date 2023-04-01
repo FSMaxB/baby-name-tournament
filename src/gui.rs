@@ -1,4 +1,5 @@
-use gtk4::ApplicationWindow;
+use gtk::ApplicationWindow;
+use libadwaita::gtk;
 use libadwaita::prelude::*;
 use libadwaita::Application;
 use sqlx::SqlitePool;
