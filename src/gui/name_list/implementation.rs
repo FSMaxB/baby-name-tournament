@@ -70,8 +70,16 @@ impl ObjectImpl for NameList {
 				.bind(&gender_label, "label", Widget::NONE);
 		});
 
-		let name_column = ColumnViewColumn::new(Some("Name"), Some(name_factory));
-		let gender_column = ColumnViewColumn::new(Some("Gender"), Some(gender_factory));
+		let name_column = ColumnViewColumn::builder()
+			.title("Name")
+			.resizable(true)
+			.factory(&name_factory)
+			.build();
+		let gender_column = ColumnViewColumn::builder()
+			.title("Gender")
+			.resizable(true)
+			.factory(&gender_factory)
+			.build();
 
 		name_list.set_model(Some(&model));
 		name_list.append_column(&name_column);
