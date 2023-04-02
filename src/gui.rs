@@ -10,6 +10,8 @@ use tokio::runtime::Runtime;
 const APPLICATION_ID: &str = "de.maxbruckner.baby-name-tournament";
 
 mod backend;
+mod database_list_model;
+mod force_unwrapped_field;
 mod name_list;
 mod name_model;
 mod runtime_thread;

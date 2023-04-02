@@ -1,14 +1,13 @@
 use crate::gui::backend::Backend;
+use crate::gui::database_list_model::{DatabaseListModel, DatabaseView};
 use crate::gui::name_model::NameModel;
-use gio::ListStore;
 use glib::subclass::InitializingObject;
 use gtk::{
 	prelude::*, ColumnView, ColumnViewColumn, CompositeTemplate, Label, SignalListItemFactory, SingleSelection,
 	TemplateChild, Widget,
 };
-use libadwaita::glib::{clone, MainContext};
 use libadwaita::subclass::prelude::*;
-use libadwaita::{gio, glib, gtk};
+use libadwaita::{glib, gtk};
 use std::ops::Deref;
 
 #[derive(CompositeTemplate, Default)]
@@ -16,10 +15,8 @@ use std::ops::Deref;
 pub struct NameList {
 	#[template_child]
 	pub name_list: TemplateChild<ColumnView>,
-	pub list_store: ListStore,
+	pub database_list_model: DatabaseListModel,
 	pub selection_model: SingleSelection,
-	// TODO: Use custom Model instead
-	pub backend: Backend,
 }
 
 #[glib::object_subclass]
@@ -42,8 +39,6 @@ impl ObjectImpl for NameList {
 		self.parent_constructed();
 
 		let name_list = self.name_list.deref();
-		self.selection_model.set_model(Some(&self.list_store));
-
 		let name_factory = SignalListItemFactory::new();
 		let gender_factory = SignalListItemFactory::new();
 
@@ -84,15 +79,9 @@ impl WidgetImpl for NameList {}
 impl BoxImpl for NameList {}
 
 impl NameList {
-	pub fn schedule_update_of_all_names(&self) {
-		let backend = self.backend.clone();
-		let list_store = &self.list_store;
-		MainContext::default().spawn_local(clone!(@weak list_store => async move {
-			let names = backend.list_all_names().await;
-			list_store.remove_all();
-			for name in names {
-				list_store.append(&NameModel::from(name));
-			}
-		}));
+	pub fn initialize(&self, backend: Backend, database_view: impl DatabaseView) {
+		self.database_list_model.initialize(backend, database_view);
+
+		self.selection_model.set_model(Some(&self.database_list_model));
 	}
 }

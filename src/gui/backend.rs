@@ -34,11 +34,9 @@ impl Backend {
 			panic!("Tried to initialize backend from uninitialized backend");
 		};
 
-		assert!(
-			self.inner.get().is_none(),
-			"Tried to initialize backend that was already initialized"
-		);
-		let _ = self.inner.set(inner);
+		if let Err(_) = self.inner.set(inner) {
+			panic!("Tried to initialize backend that was already initialized");
+		}
 	}
 
 	pub fn database_pool(&self) -> &SqlitePool {
@@ -67,7 +65,7 @@ impl Backend {
 			.expect("Running future failed")
 	}
 
-	pub async fn block_on_future<FUTURE>(&self, future: FUTURE) -> FUTURE::Output
+	pub fn block_on_future<FUTURE>(&self, future: FUTURE) -> FUTURE::Output
 	where
 		FUTURE: Future,
 	{
