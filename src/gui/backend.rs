@@ -1,6 +1,6 @@
 use crate::csv_parser::Gender;
 use crate::database;
-use crate::gui::name_model::NameModel;
+use crate::database::Name;
 use futures_util::TryStreamExt;
 use once_cell::unsync::OnceCell;
 use sqlx::SqlitePool;
@@ -49,18 +49,25 @@ impl Backend {
 		&self.inner().runtime_handle
 	}
 
-	// FIXME: This blocks the main loop and doesn't do any error handling
-	pub fn list_all_names(&self) -> Vec<NameModel> {
-		self.block_on_future(async {
-			database::list_all(Gender::Both, self.database_pool())
-				.map_ok(NameModel::from)
-				.try_collect()
-				.await
-		})
-		.expect("Database error")
+	pub async fn list_all_names(&self) -> Vec<Name> {
+		let database_pool = self.database_pool().clone();
+		self.run_future(async move { database::list_all(Gender::Both, &database_pool).try_collect().await })
+			.await
+			.expect("Database error")
 	}
 
-	pub fn block_on_future<FUTURE>(&self, future: FUTURE) -> FUTURE::Output
+	pub async fn run_future<FUTURE>(&self, future: FUTURE) -> FUTURE::Output
+	where
+		FUTURE: Future + Send + 'static,
+		FUTURE::Output: Send,
+	{
+		self.runtime_handle()
+			.spawn(future)
+			.await
+			.expect("Running future failed")
+	}
+
+	pub async fn block_on_future<FUTURE>(&self, future: FUTURE) -> FUTURE::Output
 	where
 		FUTURE: Future,
 	{

@@ -13,6 +13,6 @@ glib::wrapper! {
 impl NameList {
 	pub fn initialize(&self, backend: Backend) {
 		self.imp().backend.initialize(backend);
-		self.imp().update_all_names();
+		self.imp().schedule_update_of_all_names();
 	}
 }

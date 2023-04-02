@@ -6,6 +6,7 @@ use gtk::{
 	prelude::*, ColumnView, ColumnViewColumn, CompositeTemplate, Label, SignalListItemFactory, SingleSelection,
 	TemplateChild, Widget,
 };
+use libadwaita::glib::{clone, MainContext};
 use libadwaita::subclass::prelude::*;
 use libadwaita::{gio, glib, gtk};
 use std::ops::Deref;
@@ -83,10 +84,15 @@ impl WidgetImpl for NameList {}
 impl BoxImpl for NameList {}
 
 impl NameList {
-	// FIXME: This is blocking the main loop waiting for data from the database
-	pub fn update_all_names(&self) {
-		let names = self.backend.list_all_names();
-		self.list_store.remove_all();
-		self.list_store.extend_from_slice(&names);
+	pub fn schedule_update_of_all_names(&self) {
+		let backend = self.backend.clone();
+		let list_store = &self.list_store;
+		MainContext::default().spawn_local(clone!(@weak list_store => async move {
+			let names = backend.list_all_names().await;
+			list_store.remove_all();
+			for name in names {
+				list_store.append(&NameModel::from(name));
+			}
+		}));
 	}
 }
