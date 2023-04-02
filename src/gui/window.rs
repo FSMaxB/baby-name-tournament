@@ -1,3 +1,4 @@
+use crate::gui::backend::Backend;
 use crate::gui::name_list::NameList;
 use glib::Object;
 use libadwaita::subclass::prelude::*;
@@ -14,8 +15,13 @@ glib::wrapper! {
 }
 
 impl Window {
-	pub fn new(application: &Application) -> Self {
-		Object::builder().property("application", application).build()
+	pub fn new(application: &Application, backend: Backend) -> Self {
+		let this = Object::builder::<Self>().property("application", application).build();
+
+		this.imp().backend.initialize(backend.clone());
+		this.imp().name_list.initialize(backend);
+
+		this
 	}
 
 	pub fn name_list(&self) -> &NameList {

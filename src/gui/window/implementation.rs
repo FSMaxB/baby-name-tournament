@@ -1,14 +1,16 @@
+use crate::gui::backend::Backend;
+use crate::gui::name_list::NameList;
 use glib::subclass::InitializingObject;
 use gtk::{CompositeTemplate, TemplateChild};
 use libadwaita::subclass::prelude::*;
 use libadwaita::{glib, gtk, ApplicationWindow};
-use crate::gui::name_list::NameList;
 
 #[derive(CompositeTemplate, Default)]
 #[template(file = "../../../resources/ui/window.ui")]
 pub struct Window {
 	#[template_child]
 	pub name_list: TemplateChild<NameList>,
+	pub backend: Backend,
 }
 
 #[glib::object_subclass]

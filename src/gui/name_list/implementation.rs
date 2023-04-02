@@ -1,5 +1,4 @@
-use crate::csv_parser::Gender;
-use crate::database::Name;
+use crate::gui::backend::Backend;
 use crate::gui::name_model::NameModel;
 use gio::ListStore;
 use glib::subclass::InitializingObject;
@@ -16,6 +15,10 @@ use std::ops::Deref;
 pub struct NameList {
 	#[template_child]
 	pub name_list: TemplateChild<ColumnView>,
+	pub list_store: ListStore,
+	pub selection_model: SingleSelection,
+	// TODO: Use custom Model instead
+	pub backend: Backend,
 }
 
 #[glib::object_subclass]
@@ -38,17 +41,7 @@ impl ObjectImpl for NameList {
 		self.parent_constructed();
 
 		let name_list = self.name_list.deref();
-
-		let name_list_store = ListStore::new(NameModel::static_type());
-		name_list_store.append(&NameModel::from(Name {
-			name: "Max".to_owned(),
-			gender: Gender::Male,
-		}));
-		name_list_store.append(&NameModel::from(Name {
-			name: "Alexandra".to_owned(),
-			gender: Gender::Female,
-		}));
-		let model = SingleSelection::new(Some(name_list_store));
+		self.selection_model.set_model(Some(&self.list_store));
 
 		let name_factory = SignalListItemFactory::new();
 		let gender_factory = SignalListItemFactory::new();
@@ -81,10 +74,19 @@ impl ObjectImpl for NameList {
 			.factory(&gender_factory)
 			.build();
 
-		name_list.set_model(Some(&model));
+		name_list.set_model(Some(&self.selection_model));
 		name_list.append_column(&name_column);
 		name_list.append_column(&gender_column);
 	}
 }
 impl WidgetImpl for NameList {}
 impl BoxImpl for NameList {}
+
+impl NameList {
+	// FIXME: This is blocking the main loop waiting for data from the database
+	pub fn update_all_names(&self) {
+		let names = self.backend.list_all_names();
+		self.list_store.remove_all();
+		self.list_store.extend_from_slice(&names);
+	}
+}

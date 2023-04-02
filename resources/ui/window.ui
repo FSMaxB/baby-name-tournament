@@ -4,6 +4,8 @@
 	<requires lib="libadwaita" version="1.1"/>
 	<template class="BabyNameTournamentWindow" parent="AdwApplicationWindow">
 		<property name="title">Baby Name Tournament</property>
+		<property name="default-width">1280</property>
+		<property name="default-height">720</property>
 		<property name="content">
 			<object class="GtkBox">
 				<property name="orientation">vertical</property>
@@ -11,13 +13,7 @@
 					<object class="GtkHeaderBar"/>
 				</child>
 				<child>
-					<object class="GtkScrolledWindow">
-						<property name="hscrollbar-policy">never</property>
-						<property name="propagate-natural-height">true</property>
-						<child>
-							<object class="BabyNameTournamentNameList" id="name_list"/>
-						</child>
-					</object>
+					<object class="BabyNameTournamentNameList" id="name_list"/>
 				</child>
 			</object>
 		</property>

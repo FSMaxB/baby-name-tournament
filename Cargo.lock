@@ -57,6 +57,7 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "libadwaita",
+ "once_cell",
  "ratatui",
  "serde",
  "similar-string",
