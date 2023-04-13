@@ -1,9 +1,8 @@
 use crate::gui::backend::Backend;
 use crate::gui::runtime_thread::RuntimeThread;
-use crate::gui::window::Window;
-use anyhow::anyhow;
+use libadwaita::gtk;
 use libadwaita::prelude::*;
-use libadwaita::Application;
+use relm4::{ComponentParts, ComponentSender, RelmApp, SimpleComponent};
 use sqlx::SqlitePool;
 use tokio::runtime::Runtime;
 
@@ -15,26 +14,57 @@ mod force_unwrapped_field;
 mod name_list;
 mod name_model;
 mod runtime_thread;
-mod window;
 
 pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> {
 	let runtime_thread = RuntimeThread::start(runtime);
+	let handle = runtime_thread.handle().clone();
 
-	let application = Application::builder().application_id(APPLICATION_ID).build();
-	application.connect_activate({
-		let runtime_handle = runtime_thread.handle().clone();
-		move |application| {
-			let backend = Backend::new(database_pool.clone(), runtime_handle.clone());
-			Window::new(application, backend).show()
+	RelmApp::new(APPLICATION_ID).run::<Application>((handle, database_pool));
+
+	Ok(runtime_thread.shut_down()?)
+}
+
+struct Application {
+	runtime_handle: tokio::runtime::Handle,
+	database_pool: SqlitePool,
+}
+
+#[relm4::component]
+impl SimpleComponent for Application {
+	type Init = (tokio::runtime::Handle, SqlitePool);
+	type Input = ();
+	type Output = ();
+
+	view! {
+		gtk::Window {
+			set_title: Some("Baby Name Tournament"),
+			set_default_size: (300, 100),
+
+			gtk::Box {
+				set_orientation: gtk::Orientation::Vertical,
+
+				#[name(name_list)]
+				name_list::NameList {}
+			}
 		}
-	});
-
-	let exit_code = application.run_with_args::<&str>(&[]);
-
-	runtime_thread.shut_down()?;
-
-	match exit_code.value() {
-		0 => Ok(()),
-		code => Err(anyhow!("GTK application finished with exit code {code}")),
 	}
+
+	fn init(
+		(runtime_handle, database_pool): Self::Init,
+		root: &Self::Root,
+		_sender: ComponentSender<Self>,
+	) -> ComponentParts<Self> {
+		let backend = Backend::new(database_pool.clone(), runtime_handle.clone());
+		let model = Self {
+			runtime_handle,
+			database_pool,
+		};
+		let widgets = view_output!();
+
+		widgets.name_list.initialize(backend);
+
+		ComponentParts { model, widgets }
+	}
+
+	fn update(&mut self, _message: Self::Input, _sender: ComponentSender<Self>) {}
 }

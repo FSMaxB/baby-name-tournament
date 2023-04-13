@@ -5,6 +5,7 @@ use crate::gui::backend::Backend;
 use crate::gui::database_list_model::DatabaseView;
 use crate::gui::name_model::NameModel;
 use async_trait::async_trait;
+use libadwaita::glib::Object;
 use libadwaita::subclass::prelude::*;
 use libadwaita::{glib, gtk};
 use sqlx::SqlitePool;
@@ -15,6 +16,12 @@ glib::wrapper! {
 	pub struct NameList(ObjectSubclass<implementation::NameList>)
 		@extends gtk::Widget, gtk::Box,
 		@implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl Default for NameList {
+	fn default() -> Self {
+		Object::new()
+	}
 }
 
 impl NameList {
