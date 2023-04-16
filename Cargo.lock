@@ -1318,6 +1318,7 @@ dependencies = [
  "fragile",
  "futures",
  "gtk4",
+ "libadwaita",
  "once_cell",
  "relm4-macros",
  "tokio",

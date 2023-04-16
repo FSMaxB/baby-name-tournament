@@ -36,12 +36,14 @@ impl SimpleComponent for Application {
 	type Output = ();
 
 	view! {
-		gtk::Window {
+		libadwaita::ApplicationWindow {
 			set_title: Some("Baby Name Tournament"),
 			set_default_size: (300, 100),
 
 			gtk::Box {
 				set_orientation: gtk::Orientation::Vertical,
+
+				gtk::HeaderBar {},
 
 				#[local]
 				name_list -> gtk::Box {}
