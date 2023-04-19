@@ -1,12 +1,9 @@
 use crate::csv_parser::{parse_csv, Gender};
 use crate::similarities::Similarity;
-use crate::tui::{run_tui, TuiMode};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
 use futures_util::{StreamExt, TryStreamExt};
-use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
 use sqlx::SqlitePool;
 use std::path::{Path, PathBuf};
 use tokio::runtime;
@@ -15,7 +12,6 @@ mod csv_parser;
 mod database;
 mod gui;
 mod similarities;
-mod tui;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
@@ -41,7 +37,6 @@ enum Command {
 	ListAll { gender: Gender },
 	Similarities,
 	Random { gender: Gender },
-	Tui,
 	Gui,
 }
 
@@ -67,9 +62,6 @@ impl Cli {
 			}
 			Random { gender } => {
 				runtime.block_on(random(gender, database_pool))?;
-			}
-			Tui => {
-				runtime.block_on(tui(database_pool))?;
 			}
 			Gui => {
 				gui::start(runtime, database_pool)?;
@@ -124,15 +116,5 @@ pub async fn similarities(database_pool: SqlitePool) -> anyhow::Result<()> {
 pub async fn random(gender: Gender, database_pool: SqlitePool) -> anyhow::Result<()> {
 	let name = database::read_random(gender, &database_pool).await?;
 	println!("{name:?}");
-	Ok(())
-}
-
-pub async fn tui(database_pool: SqlitePool) -> anyhow::Result<()> {
-	let _tui_mode = TuiMode::enable()?;
-
-	let backend = CrosstermBackend::new(std::io::stdout());
-	let terminal = Terminal::new(backend)?;
-
-	run_tui(database_pool, terminal).await?;
 	Ok(())
 }
