@@ -1,3 +1,5 @@
+use crate::csv_parser::Gender;
+use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::name_list::NameList;
 use crate::gui::runtime_thread::RuntimeThread;
 use libadwaita::prelude::*;
@@ -12,27 +14,36 @@ const APPLICATION_ID: &str = "de.maxbruckner.baby-name-tournament";
 mod backend;
 mod database_list_model;
 mod force_unwrapped_field;
+mod gender_dropdown;
 mod name_list;
 mod name_model;
 mod runtime_thread;
+
+use backend::Backend;
 
 pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> {
 	let runtime_thread = RuntimeThread::start(runtime);
 	let handle = runtime_thread.handle().clone();
 
-	RelmApp::new(APPLICATION_ID).run::<Application>((handle, database_pool));
+	RelmApp::new(APPLICATION_ID).run::<Application>(Backend::new(database_pool, handle));
 
-	Ok(runtime_thread.shut_down()?)
+	runtime_thread.shut_down()
 }
 
 struct Application {
-	_name_list_controller: Controller<NameList>,
+	name_list_controller: Controller<NameList>,
+	_gender_dropdown_controller: Controller<GenderDropdown>,
+}
+
+#[derive(Debug)]
+enum ApplicationMessage {
+	GenderSelected(Gender),
 }
 
 #[relm4::component]
 impl SimpleComponent for Application {
-	type Init = (tokio::runtime::Handle, SqlitePool);
-	type Input = ();
+	type Init = Backend;
+	type Input = ApplicationMessage;
 	type Output = ();
 
 	view! {
@@ -45,26 +56,42 @@ impl SimpleComponent for Application {
 
 				gtk::HeaderBar {},
 
-				#[local]
+				#[local_ref]
+				gender_dropdown -> gtk::DropDown {},
+
+				#[local_ref]
 				name_list -> gtk::Box {}
 			}
 		}
 	}
 
-	fn init(
-		(runtime_handle, database_pool): Self::Init,
-		root: &Self::Root,
-		_sender: ComponentSender<Self>,
-	) -> ComponentParts<Self> {
-		let name_list_controller = NameList::builder()
-			.launch((runtime_handle.clone(), database_pool.clone()))
-			.detach();
-		let name_list = name_list_controller.widget().clone();
+	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+		let name_list_controller = NameList::builder().launch(backend).detach();
+		let name_list = name_list_controller.widget();
+
+		let gender_dropdown_controller = GenderDropdown::builder()
+			.launch(())
+			.forward(sender.input_sender(), ApplicationMessage::GenderSelected);
+		let gender_dropdown = gender_dropdown_controller.widget();
+
 		let widgets = view_output!();
 
 		let model = Self {
-			_name_list_controller: name_list_controller,
+			name_list_controller,
+			_gender_dropdown_controller: gender_dropdown_controller,
 		};
 		ComponentParts { model, widgets }
+	}
+
+	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+		use ApplicationMessage::*;
+		match message {
+			GenderSelected(gender) => {
+				self.name_list_controller
+					.sender()
+					.send(gender)
+					.expect("Failed to send gender");
+			}
+		}
 	}
 }

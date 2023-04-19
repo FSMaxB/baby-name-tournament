@@ -1,12 +1,12 @@
 use crate::gui::backend::Backend;
-use async_trait::async_trait;
 use glib::Object;
 use libadwaita::prelude::*;
 use libadwaita::subclass::prelude::*;
 use libadwaita::{gio, glib};
-use sqlx::SqlitePool;
+use once_cell::unsync;
 use static_assertions::assert_obj_safe;
 use std::any::{Any, TypeId};
+use std::cell::Cell;
 
 mod implementation;
 
@@ -36,27 +36,44 @@ impl DatabaseListModel {
 	}
 }
 
-#[async_trait]
-pub trait DatabaseView: Send + Sync + 'static {
-	type RustModel: Send;
+pub trait DatabaseView: 'static {
+	type RustModel;
+	type Filter;
 	type GObjectModel: StaticType + ObjectType + IsA<Object> + From<Self::RustModel>;
 
-	async fn read_at_offset(database_pool: &SqlitePool, offset: u32) -> anyhow::Result<Self::RustModel>;
-	async fn count(database_pool: &SqlitePool) -> u32;
+	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<Self::RustModel>;
+	fn count(&self, backend: &Backend) -> u32;
+	fn update_filter(&self, backend: &Backend, filter: Self::Filter);
+
+	fn items_changed_callback_storage(&self) -> &unsync::OnceCell<Box<dyn Fn(u32, u32)>>;
+	fn count_storage(&self) -> &Cell<u32>;
 }
 
-#[async_trait]
+pub trait DatabaseViewExt: DatabaseView {
+	fn notify_changed(&self, backend: &Backend) {
+		let previous_count = self.count_storage().get();
+		let count = self.count(backend);
+		if let Some(callback) = self.items_changed_callback_storage().get() {
+			callback(previous_count, count);
+		}
+	}
+}
+
+impl<T: DatabaseView> DatabaseViewExt for T {}
+
 trait DynamicDatabaseView {
 	fn rust_model(&self) -> TypeId;
 	fn gobject_model(&self) -> glib::Type;
 
-	async fn read_at_offset(&self, database_pool: &SqlitePool, offset: u32) -> anyhow::Result<Box<dyn Any + Send>>;
-	async fn count(&self, database_pool: &SqlitePool) -> u32;
+	fn update_filter(&self, backend: &Backend, filter: Box<dyn Any>);
+	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<Box<dyn Any>>;
+	fn count(&self, backend: &Backend) -> u32;
 
 	fn convert(&self, rust_model: Box<dyn Any>) -> Object;
+
+	fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32)>);
 }
 
-#[async_trait]
 impl<T: DatabaseView> DynamicDatabaseView for T {
 	fn rust_model(&self) -> TypeId {
 		TypeId::of::<T::RustModel>()
@@ -66,19 +83,33 @@ impl<T: DatabaseView> DynamicDatabaseView for T {
 		T::GObjectModel::static_type()
 	}
 
-	async fn read_at_offset(&self, database_pool: &SqlitePool, offset: u32) -> anyhow::Result<Box<dyn Any + Send>> {
-		let model = T::read_at_offset(database_pool, offset).await?;
+	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<Box<dyn Any>> {
+		let model = T::read_at_offset(self, backend, offset)?;
 		Ok(Box::new(model))
 	}
 
-	async fn count(&self, database_pool: &SqlitePool) -> u32 {
-		T::count(database_pool).await
+	fn count(&self, backend: &Backend) -> u32 {
+		let count = T::count(self, backend);
+		self.count_storage().set(count);
+
+		count
+	}
+
+	fn update_filter(&self, backend: &Backend, filter: Box<dyn Any>) {
+		let filter = *filter.downcast::<T::Filter>().expect("Incorrect filter type");
+		T::update_filter(self, backend, filter);
 	}
 
 	fn convert(&self, rust_model: Box<dyn Any>) -> Object {
 		let rust_model = *rust_model.downcast::<T::RustModel>().expect("Incorrect type");
 		let gobject_model = T::GObjectModel::from(rust_model);
 		gobject_model.upcast()
+	}
+
+	fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32)>) {
+		self.items_changed_callback_storage()
+			.set(callback)
+			.unwrap_or_else(|_| panic!("Callback was already set"));
 	}
 }
 

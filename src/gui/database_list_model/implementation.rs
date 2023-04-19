@@ -1,8 +1,9 @@
 use crate::gui::backend::Backend;
 use crate::gui::database_list_model::{DatabaseView, DynamicDatabaseView};
 use crate::gui::force_unwrapped_field::ForceUnwrappedField;
-use gio::ListModel;
+use gio::{prelude::*, ListModel};
 use glib::Type;
+use libadwaita::glib::clone;
 use libadwaita::subclass::prelude::*;
 use libadwaita::{gio, glib};
 
@@ -27,16 +28,12 @@ impl ListModelImpl for DatabaseListModel {
 	}
 
 	fn n_items(&self) -> u32 {
-		self.backend
-			.block_on_future(self.database_view.count(self.backend.database_pool()))
+		self.database_view.count(&self.backend)
 	}
 
 	fn item(&self, position: u32) -> Option<glib::Object> {
-		self.backend
-			.block_on_future(
-				self.database_view
-					.read_at_offset(self.backend.database_pool(), position),
-			)
+		self.database_view
+			.read_at_offset(&self.backend, position)
 			.map(|row| self.database_view.convert(row))
 			.ok()
 	}
@@ -46,5 +43,11 @@ impl DatabaseListModel {
 	pub fn initialize(&self, backend: Backend, database_view: impl DatabaseView) {
 		self.backend.initialize(backend);
 		self.database_view.initialize(Box::new(database_view));
+		let this = self.obj();
+		self.database_view.register_items_changed_callback(Box::new(
+			clone!(@weak this => move |previous_count, count| {
+				this.items_changed(0, previous_count, count);
+			}),
+		));
 	}
 }
