@@ -2,7 +2,7 @@ use crate::csv_parser::Gender;
 use crate::database;
 use crate::database::Name;
 use crate::gui::backend::Backend;
-use crate::gui::database_list_model::{DatabaseListModel, DatabaseView, DatabaseViewExt};
+use crate::gui::database_list::{DatabaseListModel, DatabaseView, DatabaseViewExt};
 use crate::gui::name_model::NameModel;
 use async_trait::async_trait;
 use gtk::{prelude::*, ColumnViewColumn, Label, PolicyType, SignalListItemFactory, SingleSelection, Widget};

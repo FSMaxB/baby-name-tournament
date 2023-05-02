@@ -1,5 +1,6 @@
 use crate::gui::backend::Backend;
-use crate::gui::database_list_model::{DatabaseView, DynamicDatabaseView};
+use crate::gui::database_list::database_list_model::DynamicDatabaseView;
+use crate::gui::database_list::DatabaseView;
 use crate::gui::force_unwrapped_field::ForceUnwrappedField;
 use gio::{prelude::*, ListModel};
 use glib::Type;

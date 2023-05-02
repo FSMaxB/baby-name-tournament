@@ -12,7 +12,7 @@ use tokio::runtime::Runtime;
 const APPLICATION_ID: &str = "de.maxbruckner.baby-name-tournament";
 
 mod backend;
-mod database_list_model;
+mod database_list;
 mod force_unwrapped_field;
 mod gender_dropdown;
 mod name_list;
