@@ -2,18 +2,14 @@ use crate::csv_parser::Gender;
 use crate::database;
 use crate::database::Name;
 use crate::gui::backend::Backend;
-use crate::gui::database_list::{DatabaseListModel, DatabaseView, DatabaseViewExt};
-use crate::gui::name_model::NameModel;
-use async_trait::async_trait;
-use gtk::{prelude::*, ColumnViewColumn, Label, PolicyType, SignalListItemFactory, SingleSelection, Widget};
-use once_cell::unsync;
+use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
+use gtk::{prelude::*, ColumnViewColumn, Label, PolicyType, SignalListItemFactory, SingleSelection};
+use libadwaita::glib::BoxedAnyObject;
 use relm4::gtk;
 use relm4::{ComponentParts, ComponentSender, SimpleComponent};
-use std::cell::Cell;
-use std::rc::Rc;
 
 pub struct NameList {
-	list_view: NameListView,
+	list_manager: DatabaseListManager<NameListView>,
 	backend: Backend,
 }
 
@@ -50,18 +46,40 @@ impl SimpleComponent for NameList {
 		name_factory.connect_setup(|_, list_item| {
 			let name_label = Label::new(Some("<empty name>"));
 			list_item.set_child(Some(&name_label));
-			list_item
-				.property_expression("item")
-				.chain_property::<NameModel>("name")
-				.bind(&name_label, "label", Widget::NONE);
+		});
+		name_factory.connect_bind(|_, list_item| {
+			let name_label = list_item
+				.child()
+				.expect("List item has no child")
+				.downcast::<Label>()
+				.expect("Not a label");
+			let item = list_item
+				.item()
+				.expect("ListItem has no item")
+				.downcast::<BoxedAnyObject>()
+				.expect("Incorrect type");
+			let name = item.borrow::<Name>();
+
+			name_label.set_label(&name.name);
 		});
 		gender_factory.connect_setup(|_, list_item| {
 			let gender_label = Label::new(Some("<empty gender>"));
 			list_item.set_child(Some(&gender_label));
-			list_item
-				.property_expression("item")
-				.chain_property::<NameModel>("gender")
-				.bind(&gender_label, "label", Widget::NONE);
+		});
+		gender_factory.connect_bind(|_, list_item| {
+			let gender_label = list_item
+				.child()
+				.expect("List item has no child")
+				.downcast::<Label>()
+				.expect("Not a label");
+			let item = list_item
+				.item()
+				.expect("ListItem has no item")
+				.downcast::<BoxedAnyObject>()
+				.expect("Incorrect type");
+			let name = item.borrow::<Name>();
+
+			gender_label.set_label(name.gender.as_ref());
 		});
 
 		let name_column = ColumnViewColumn::builder()
@@ -75,70 +93,38 @@ impl SimpleComponent for NameList {
 			.factory(&gender_factory)
 			.build();
 
-		let list_view = NameListView::default();
-		let list_model = DatabaseListModel::new(backend.clone(), list_view.clone());
+		let list_manager = DatabaseListManager::new(Gender::Both, NameListView::default());
+		let list_model = DatabaseListModel::new(backend.clone(), list_manager.clone());
 		let selection_model = SingleSelection::new(Some(list_model));
 
 		widgets.column_view.set_model(Some(&selection_model));
 		widgets.column_view.append_column(&name_column);
 		widgets.column_view.append_column(&gender_column);
 
-		let model = NameList { list_view, backend };
+		let model = NameList { list_manager, backend };
 		ComponentParts { model, widgets }
 	}
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		self.list_view.update_filter(&self.backend, message);
+		self.list_manager.update_filter(&self.backend, message);
 	}
 }
 
-#[derive(Clone)]
-struct NameListView {
-	gender: Rc<Cell<Gender>>,
-	// FIXME: Pull count and callback out into a wrapper type to prevent incorrect state management!
-	count: Rc<Cell<u32>>,
-	callback: Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>,
-}
+#[derive(Clone, Default)]
+struct NameListView;
 
-impl Default for NameListView {
-	fn default() -> Self {
-		Self {
-			gender: Rc::new(Cell::new(Gender::Both)),
-			count: Rc::new(Cell::new(0)),
-			callback: Default::default(),
-		}
-	}
-}
-
-#[async_trait]
 impl DatabaseView for NameListView {
-	type RustModel = Name;
+	type Model = Name;
 	type Filter = Gender;
-	type GObjectModel = NameModel;
 
-	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<Self::RustModel> {
-		let gender = self.gender.get();
-		let model = backend.block_on_future(database::read_name_at_offset(offset, gender, backend.database_pool()))?;
+	fn read_at_offset(&self, backend: &Backend, filter: Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
+		let model = backend.block_on_future(database::read_name_at_offset(offset, filter, backend.database_pool()))?;
 		Ok(model)
 	}
 
-	fn count(&self, backend: &Backend) -> u32 {
-		let gender = self.gender.get();
+	fn count(&self, backend: &Backend, filter: Self::Filter) -> u32 {
 		backend
-			.block_on_future(database::count_names(gender, backend.database_pool()))
+			.block_on_future(database::count_names(filter, backend.database_pool()))
 			.expect("Failed to count names") as u32
-	}
-
-	fn update_filter(&self, backend: &Backend, filter: Self::Filter) {
-		self.gender.set(filter);
-		self.notify_changed(backend);
-	}
-
-	fn items_changed_callback_storage(&self) -> &unsync::OnceCell<Box<dyn Fn(u32, u32)>> {
-		&self.callback
-	}
-
-	fn count_storage(&self) -> &Cell<u32> {
-		&self.count
 	}
 }

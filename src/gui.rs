@@ -16,7 +16,6 @@ mod database_list;
 mod force_unwrapped_field;
 mod gender_dropdown;
 mod name_list;
-mod name_model;
 mod runtime_thread;
 
 use backend::Backend;
