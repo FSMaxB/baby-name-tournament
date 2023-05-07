@@ -18,6 +18,7 @@ mod gender_dropdown;
 mod name_list;
 mod runtime_thread;
 
+use crate::database::Name;
 use backend::Backend;
 
 pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> {
@@ -37,6 +38,7 @@ struct Application {
 #[derive(Debug)]
 enum ApplicationMessage {
 	GenderSelected(Gender),
+	NameSelected(Name),
 }
 
 #[relm4::component]
@@ -65,7 +67,9 @@ impl SimpleComponent for Application {
 	}
 
 	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
-		let name_list_controller = NameList::builder().launch(backend).detach();
+		let name_list_controller = NameList::builder()
+			.launch(backend)
+			.forward(sender.input_sender(), ApplicationMessage::NameSelected);
 		let name_list = name_list_controller.widget();
 
 		let gender_dropdown_controller = GenderDropdown::builder()
@@ -91,6 +95,7 @@ impl SimpleComponent for Application {
 					.send(NameListInput::GenderFiltered(gender))
 					.expect("Failed to send gender");
 			}
+			NameSelected(name) => println!("Selected {name:?}"),
 		}
 	}
 }

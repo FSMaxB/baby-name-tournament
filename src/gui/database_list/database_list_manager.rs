@@ -38,6 +38,10 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		}
 	}
 
+	pub fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<View::Model> {
+		self.view.read_at_offset(backend, self.filter.get(), offset)
+	}
+
 	pub(super) fn count(&self, backend: &Backend) -> u32 {
 		let count = self.view.count(backend, self.filter.get());
 		self.count.set(count);
@@ -65,7 +69,7 @@ assert_obj_safe!(DynamicListManager);
 
 impl<View: DatabaseView> DynamicListManager for DatabaseListManager<View> {
 	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<BoxedAnyObject> {
-		let object = self.view.read_at_offset(backend, self.filter.get(), offset)?;
+		let object = self.read_at_offset(backend, offset)?;
 		Ok(BoxedAnyObject::new(object))
 	}
 

@@ -92,6 +92,18 @@ impl SimpleComponent for NameList {
 		widgets.name_list.set_factory(Some(&name_factory));
 		widgets.name_list.set_model(Some(&selection_model));
 
+		widgets.name_list.connect_activate({
+			let list_manager = list_manager.clone();
+			let backend = backend.clone();
+			let input_sender = sender.input_sender().clone();
+			move |_, position| {
+				let Ok(name) = list_manager.read_at_offset(&backend, position) else {
+					return;
+				};
+				let _ = input_sender.send(NameListInput::NameSelected(name));
+			}
+		});
+
 		let model = NameList { list_manager, backend };
 		ComponentParts { model, widgets }
 	}
