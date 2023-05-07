@@ -3,9 +3,10 @@ use crate::database;
 use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
-use gtk::{prelude::*, ColumnViewColumn, Label, PolicyType, SignalListItemFactory, SingleSelection};
+use gtk::{prelude::*, Label, PolicyType, SignalListItemFactory, SingleSelection};
 use libadwaita::glib::BoxedAnyObject;
-use relm4::gtk;
+use libadwaita::gtk::Orientation;
+use relm4::{gtk, RelmIterChildrenExt};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent};
 
 pub struct NameList {
@@ -27,12 +28,8 @@ impl SimpleComponent for NameList {
 				set_hscrollbar_policy: PolicyType::Never,
 				set_propagate_natural_height: true,
 
-				#[name(column_view)]
-				gtk::ColumnView {
-					set_reorderable: false,
-					set_show_column_separators: true,
-					set_show_row_separators: true,
-				}
+				#[name(name_list)]
+				gtk::ListView {}
 			}
 		}
 	}
@@ -41,65 +38,54 @@ impl SimpleComponent for NameList {
 		let widgets = view_output!();
 
 		let name_factory = SignalListItemFactory::new();
-		let gender_factory = SignalListItemFactory::new();
 
 		name_factory.connect_setup(|_, list_item| {
 			let name_label = Label::new(Some("<empty name>"));
-			list_item.set_child(Some(&name_label));
+			let gender_label = Label::new(Some("<empty gender>"));
+			let row = gtk::Box::builder()
+				.spacing(12)
+				.homogeneous(true)
+				.orientation(Orientation::Horizontal)
+				.build();
+			row.append(&name_label);
+			row.append(&gender_label);
+			list_item.set_child(Some(&row));
 		});
 		name_factory.connect_bind(|_, list_item| {
-			let name_label = list_item
+			let row = list_item
 				.child()
 				.expect("List item has no child")
+				.downcast::<gtk::Box>()
+				.expect("Incorrect type");
+
+			let mut children = row.iter_children();
+			let name_label = children
+				.next()
+				.expect("Missing name_label")
 				.downcast::<Label>()
-				.expect("Not a label");
+				.expect("Incorrect type");
+			let gender_label = children
+				.next()
+				.expect("Missing gender_label")
+				.downcast::<Label>()
+				.expect("Incorrect type");
+
 			let item = list_item
 				.item()
-				.expect("ListItem has no item")
+				.expect("Missing item")
 				.downcast::<BoxedAnyObject>()
-				.expect("Incorrect type");
+				.expect("Incorrect Type");
 			let name = item.borrow::<Name>();
 
 			name_label.set_label(&name.name);
-		});
-		gender_factory.connect_setup(|_, list_item| {
-			let gender_label = Label::new(Some("<empty gender>"));
-			list_item.set_child(Some(&gender_label));
-		});
-		gender_factory.connect_bind(|_, list_item| {
-			let gender_label = list_item
-				.child()
-				.expect("List item has no child")
-				.downcast::<Label>()
-				.expect("Not a label");
-			let item = list_item
-				.item()
-				.expect("ListItem has no item")
-				.downcast::<BoxedAnyObject>()
-				.expect("Incorrect type");
-			let name = item.borrow::<Name>();
-
 			gender_label.set_label(name.gender.as_ref());
 		});
-
-		let name_column = ColumnViewColumn::builder()
-			.title("Name")
-			.resizable(true)
-			.factory(&name_factory)
-			.build();
-		let gender_column = ColumnViewColumn::builder()
-			.title("Gender")
-			.resizable(true)
-			.factory(&gender_factory)
-			.build();
 
 		let list_manager = DatabaseListManager::new(Gender::Both, NameListView::default());
 		let list_model = DatabaseListModel::new(backend.clone(), list_manager.clone());
 		let selection_model = SingleSelection::new(Some(list_model));
-
-		widgets.column_view.set_model(Some(&selection_model));
-		widgets.column_view.append_column(&name_column);
-		widgets.column_view.append_column(&gender_column);
+		widgets.name_list.set_factory(Some(&name_factory));
+		widgets.name_list.set_model(Some(&selection_model));
 
 		let model = NameList { list_manager, backend };
 		ComponentParts { model, widgets }
