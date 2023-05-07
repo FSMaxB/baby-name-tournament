@@ -1,6 +1,6 @@
 use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
-use crate::gui::name_list::NameList;
+use crate::gui::name_list::{NameList, NameListInput};
 use crate::gui::runtime_thread::RuntimeThread;
 use libadwaita::prelude::*;
 use relm4::{
@@ -88,7 +88,7 @@ impl SimpleComponent for Application {
 			GenderSelected(gender) => {
 				self.name_list_controller
 					.sender()
-					.send(gender)
+					.send(NameListInput::GenderFiltered(gender))
 					.expect("Failed to send gender");
 			}
 		}

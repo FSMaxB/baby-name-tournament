@@ -3,11 +3,18 @@ use crate::database;
 use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
-use gtk::{prelude::*, Label, PolicyType, SignalListItemFactory, SingleSelection};
+use crate::gui::name_list::name_list_row::NameListRow;
+use gtk::{prelude::*, PolicyType, SignalListItemFactory, SingleSelection};
 use libadwaita::glib::BoxedAnyObject;
-use libadwaita::gtk::Orientation;
-use relm4::{gtk, RelmIterChildrenExt};
-use relm4::{ComponentParts, ComponentSender, SimpleComponent};
+use libadwaita::gtk;
+use libadwaita::gtk::ffi::GtkListItem;
+use relm4::{Component, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{ComponentController, Controller};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+mod name_list_row;
 
 pub struct NameList {
 	list_manager: DatabaseListManager<NameListView>,
@@ -16,8 +23,8 @@ pub struct NameList {
 
 #[relm4::component(pub)]
 impl SimpleComponent for NameList {
-	type Input = Gender;
-	type Output = ();
+	type Input = NameListInput;
+	type Output = Name;
 	type Init = Backend;
 
 	view! {
@@ -34,51 +41,49 @@ impl SimpleComponent for NameList {
 		}
 	}
 
-	fn init(backend: Self::Init, _root: &Self::Root, _sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init(backend: Self::Init, _root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let widgets = view_output!();
 
 		let name_factory = SignalListItemFactory::new();
 
-		name_factory.connect_setup(|_, list_item| {
-			let name_label = Label::new(Some("<empty name>"));
-			let gender_label = Label::new(Some("<empty gender>"));
-			let row = gtk::Box::builder()
-				.spacing(12)
-				.homogeneous(true)
-				.orientation(Orientation::Horizontal)
-				.build();
-			row.append(&name_label);
-			row.append(&gender_label);
-			list_item.set_child(Some(&row));
+		// FIXME: Find a better way than the pointer of the root widget to identify which component is hooked up to which GtkListItem
+		let controllers = Rc::new(RefCell::new(HashMap::<*mut GtkListItem, Controller<NameListRow>>::new()));
+
+		name_factory.connect_setup({
+			let sender = sender.clone();
+			let controllers = controllers.clone();
+			move |_, list_item| {
+				let controller = NameListRow::builder()
+					.launch(())
+					.forward(sender.input_sender(), |_| unreachable!());
+				list_item.set_child(Some(controller.widget()));
+				controllers.borrow_mut().insert(list_item.as_ptr(), controller);
+			}
 		});
-		name_factory.connect_bind(|_, list_item| {
-			let row = list_item
-				.child()
-				.expect("List item has no child")
-				.downcast::<gtk::Box>()
-				.expect("Incorrect type");
+		name_factory.connect_bind({
+			let controllers = controllers.clone();
+			move |_, list_item| {
+				let controllers = controllers.borrow();
+				let controller = controllers
+					.get(&list_item.as_ptr())
+					.expect("No controller for this list item");
 
-			let mut children = row.iter_children();
-			let name_label = children
-				.next()
-				.expect("Missing name_label")
-				.downcast::<Label>()
-				.expect("Incorrect type");
-			let gender_label = children
-				.next()
-				.expect("Missing gender_label")
-				.downcast::<Label>()
-				.expect("Incorrect type");
+				let item = list_item
+					.item()
+					.expect("Missing item")
+					.downcast::<BoxedAnyObject>()
+					.expect("Incorrect Type");
+				let name = item.borrow::<Name>();
 
-			let item = list_item
-				.item()
-				.expect("Missing item")
-				.downcast::<BoxedAnyObject>()
-				.expect("Incorrect Type");
-			let name = item.borrow::<Name>();
+				let _ = controller.sender().send(name.clone());
+			}
+		});
 
-			name_label.set_label(&name.name);
-			gender_label.set_label(name.gender.as_ref());
+		name_factory.connect_teardown({
+			let controllers = controllers.clone();
+			move |_, list_item| {
+				controllers.borrow_mut().remove(&list_item.as_ptr());
+			}
 		});
 
 		let list_manager = DatabaseListManager::new(Gender::Both, NameListView::default());
@@ -91,9 +96,21 @@ impl SimpleComponent for NameList {
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		self.list_manager.update_filter(&self.backend, message);
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+		use NameListInput::*;
+		match message {
+			GenderFiltered(gender) => self.list_manager.update_filter(&self.backend, gender),
+			NameSelected(name) => {
+				let _ = sender.output_sender().send(name);
+			}
+		}
 	}
+}
+
+#[derive(Debug)]
+pub enum NameListInput {
+	GenderFiltered(Gender),
+	NameSelected(Name),
 }
 
 #[derive(Clone, Default)]
