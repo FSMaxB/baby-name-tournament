@@ -54,7 +54,10 @@ impl SimpleComponent for NameList {
 			let controllers = controllers.clone();
 			move |_, list_item| {
 				let controller = NameListRow::builder()
-					.launch(())
+					.launch(Name {
+						name: "<none>".to_owned(),
+						gender: Gender::Both,
+					})
 					.forward(sender.input_sender(), |_| unreachable!());
 				list_item.set_child(Some(controller.widget()));
 				controllers.borrow_mut().insert(list_item.as_ptr(), controller);

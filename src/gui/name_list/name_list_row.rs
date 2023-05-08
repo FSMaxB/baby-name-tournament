@@ -3,14 +3,14 @@ use gtk::prelude::*;
 use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 pub struct NameListRow {
-	name: Option<Name>,
+	name: Name,
 }
 
 #[relm4::component(pub)]
 impl SimpleComponent for NameListRow {
 	type Input = Name;
 	type Output = std::convert::Infallible;
-	type Init = ();
+	type Init = Name;
 
 	view! {
 		gtk::Box {
@@ -19,19 +19,19 @@ impl SimpleComponent for NameListRow {
 			#[name(name_label)]
 			gtk::Label {
 				#[watch]
-				set_label: model.name.as_ref().map(|Name {name, ..}| name.as_str()).unwrap_or("<unknown>"),
+				set_label: model.name.name.as_str(),
 			},
 
 			#[name(gender_label)]
 			gtk::Label {
 				#[watch]
-				set_label: model.name.as_ref().map(|Name {gender, ..}| gender.as_ref()).unwrap_or("<unknown>"),
+				set_label: model.name.gender.as_ref(),
 			}
 		}
 	}
 
-	fn init((): Self::Init, _root: &Self::Root, _sender: ComponentSender<Self>) -> ComponentParts<Self> {
-		let model = NameListRow { name: None };
+	fn init(name: Self::Init, _root: &Self::Root, _sender: ComponentSender<Self>) -> ComponentParts<Self> {
+		let model = NameListRow { name };
 
 		let widgets = view_output!();
 
@@ -39,6 +39,6 @@ impl SimpleComponent for NameListRow {
 	}
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		self.name = Some(message);
+		self.name = message;
 	}
 }
