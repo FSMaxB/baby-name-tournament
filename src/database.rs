@@ -5,7 +5,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::SqlitePool;
 use std::path::Path;
 
-pub async fn initialize_database(path: &Path) -> anyhow::Result<SqlitePool> {
+pub async fn initialize(path: &Path) -> anyhow::Result<SqlitePool> {
 	let pool = SqlitePool::connect_with(connect_options(path)).await?;
 
 	sqlx::migrate!("./migrations").run(&pool).await?;
@@ -193,6 +193,50 @@ pub fn list_all_pairs(database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Re
 	})
 	.map_ok(|pairs: Vec<Pair>| stream::iter(pairs.into_iter().map(|Pair { a, b }| Ok((a, b)))))
 	.try_flatten()
+}
+
+pub async fn read_name_at_offset(offset: u32, gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
+	sqlx::query_as!(
+		Name,
+		r#"
+		SELECT
+			name as "name!",
+			gender as "gender!: Gender"
+		FROM names
+		WHERE
+			CASE $1
+				WHEN 'both' THEN TRUE
+				WHEN 'female' THEN gender != 'male'
+				WHEN 'male' THEN gender != 'female'
+			END
+		ORDER BY name ASC
+		LIMIT 1
+		OFFSET $2
+		"#,
+		gender,
+		offset,
+	)
+	.fetch_one(database_pool)
+	.await
+}
+
+pub async fn count_names(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<i32> {
+	sqlx::query_scalar!(
+		r#"
+		SELECT
+			count(*) as "count!"
+		FROM names
+		WHERE
+			CASE $1
+				WHEN 'both' THEN TRUE
+				WHEN 'female' THEN gender != 'male'
+				WHEN 'male' THEN gender != 'female'
+			END
+		"#,
+		gender,
+	)
+	.fetch_one(database_pool)
+	.await
 }
 
 pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
