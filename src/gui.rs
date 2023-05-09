@@ -2,8 +2,9 @@ use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::name_list::{NameList, NameListInput};
 use crate::gui::runtime_thread::RuntimeThread;
-use libadwaita::gtk::StackTransitionType;
+use gtk::StackTransitionType;
 use libadwaita::prelude::*;
+use libadwaita::HeaderBar;
 use relm4::{
 	gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp, SimpleComponent,
 };
@@ -21,7 +22,7 @@ mod name_list;
 mod runtime_thread;
 
 use crate::database::Name;
-use crate::gui::name_detail_view::{NameDetailView, NameDetailViewOutput};
+use crate::gui::name_detail_view::NameDetailView;
 use backend::Backend;
 
 pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> {
@@ -38,6 +39,7 @@ struct Application {
 	_gender_dropdown_controller: Controller<GenderDropdown>,
 	name_detail_view_controller: Controller<NameDetailView>,
 	stack: gtk::Stack,
+	back_button: gtk::Button,
 }
 
 #[derive(Debug)]
@@ -61,22 +63,24 @@ impl SimpleComponent for Application {
 			gtk::Box {
 				set_orientation: gtk::Orientation::Vertical,
 
-				gtk::HeaderBar {},
+				HeaderBar {
+					pack_start: &back_button,
+				},
 
-				#[name(stack)]
-				gtk::Stack {
+				#[local]
+				stack -> gtk::Stack {
 					set_transition_type: StackTransitionType::SlideLeftRight,
 
 					gtk::Box {
 						set_orientation: gtk::Orientation::Vertical,
-						#[local_ref]
+						#[local]
 						gender_dropdown -> gtk::DropDown {},
 
-						#[local_ref]
+						#[local]
 						name_list -> gtk::Box {},
 					},
 
-					#[local_ref]
+					#[local]
 					name_detail_view -> gtk::Box {},
 				},
 			}
@@ -87,34 +91,49 @@ impl SimpleComponent for Application {
 		let name_list_controller = NameList::builder()
 			.launch(backend.clone())
 			.forward(sender.input_sender(), ApplicationMessage::NameSelected);
-		let name_list = name_list_controller.widget();
+		let name_list = name_list_controller.widget().clone();
 
 		let gender_dropdown_controller = GenderDropdown::builder()
 			.launch(())
 			.forward(sender.input_sender(), ApplicationMessage::GenderSelected);
-		let gender_dropdown = gender_dropdown_controller.widget();
+		let gender_dropdown = gender_dropdown_controller.widget().clone();
 
 		let name_detail_view_controller = NameDetailView::builder()
 			.launch((
-				backend.clone(),
+				backend,
 				Name {
 					name: "<none>".to_owned(),
 					gender: Gender::Both,
 				},
 			))
-			.forward(sender.input_sender(), |NameDetailViewOutput::Back| {
-				ApplicationMessage::BackToList
-			});
-		let name_detail_view = name_detail_view_controller.widget();
+			.forward(sender.input_sender(), |_: std::convert::Infallible| unreachable!());
+		let name_detail_view = name_detail_view_controller.widget().clone();
 
-		let widgets = view_output!();
+		let stack = gtk::Stack::new();
+
+		let back_button = gtk::Button::builder()
+			.name("Back")
+			.icon_name("go-previous-symbolic")
+			.visible(false)
+			.build();
+
+		back_button.connect_clicked({
+			let input_sender = sender.input_sender().clone();
+			move |_| {
+				let _ = input_sender.send(ApplicationMessage::BackToList);
+			}
+		});
 
 		let model = Self {
 			name_list_controller,
 			_gender_dropdown_controller: gender_dropdown_controller,
 			name_detail_view_controller,
-			stack: widgets.stack.clone(),
+			stack: stack.clone(),
+			back_button: back_button.clone(),
 		};
+
+		let widgets = view_output!();
+
 		ComponentParts { model, widgets }
 	}
 
@@ -131,10 +150,12 @@ impl SimpleComponent for Application {
 				let _ = self.name_detail_view_controller.sender().send(name);
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(1, true);
+				self.back_button.set_visible(true);
 			}
 			BackToList => {
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(0, true);
+				self.back_button.set_visible(false);
 			}
 		}
 	}
