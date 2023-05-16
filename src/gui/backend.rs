@@ -34,7 +34,7 @@ impl Backend {
 			panic!("Tried to initialize backend from uninitialized backend");
 		};
 
-		if let Err(_) = self.inner.set(inner) {
+		if self.inner.set(inner).is_err() {
 			panic!("Tried to initialize backend that was already initialized");
 		}
 	}

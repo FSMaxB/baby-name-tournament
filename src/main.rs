@@ -72,7 +72,7 @@ impl Cli {
 }
 
 pub async fn parse(name_list: &Path) -> anyhow::Result<()> {
-	let mut name_stream = stream_blocking_iterator(parse_csv(&name_list)?);
+	let mut name_stream = stream_blocking_iterator(parse_csv(name_list)?);
 	while let Some(line) = name_stream.next().await {
 		let line = line?;
 		println!("{line:?}");
@@ -83,7 +83,7 @@ pub async fn parse(name_list: &Path) -> anyhow::Result<()> {
 pub async fn ingest(name_list: &Path, database_pool: SqlitePool) -> anyhow::Result<()> {
 	let source = name_list.file_name().context("Missing filename")?.to_string_lossy();
 
-	let mut name_stream = stream_blocking_iterator(parse_csv(&name_list)?);
+	let mut name_stream = stream_blocking_iterator(parse_csv(name_list)?);
 	while let Some(record) = name_stream.next().await {
 		let record = record?;
 		database::upsert_name(&record.name, record.gender, &database_pool).await?;

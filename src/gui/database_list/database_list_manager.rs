@@ -11,9 +11,11 @@ use std::rc::Rc;
 pub struct DatabaseListManager<View: DatabaseView> {
 	filter: Rc<Cell<View::Filter>>,
 	count: Rc<Cell<u32>>,
-	callback: Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>,
+	callback: Callback,
 	view: View,
 }
+
+type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>;
 
 impl<View: DatabaseView> DatabaseListManager<View> {
 	pub fn new(initial_filter: View::Filter, view: View) -> Self {

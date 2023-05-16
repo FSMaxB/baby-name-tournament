@@ -82,11 +82,8 @@ impl SimpleComponent for NameList {
 			}
 		});
 
-		name_factory.connect_teardown({
-			let controllers = controllers.clone();
-			move |_, list_item| {
-				controllers.borrow_mut().remove(&list_item.as_ptr());
-			}
+		name_factory.connect_teardown(move |_, list_item| {
+			controllers.borrow_mut().remove(&list_item.as_ptr());
 		});
 
 		let list_manager = DatabaseListManager::new(Gender::Both, NameListView::default());
