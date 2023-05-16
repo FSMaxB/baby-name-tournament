@@ -58,7 +58,7 @@ impl SimpleComponent for Application {
 	view! {
 		libadwaita::ApplicationWindow {
 			set_title: Some("Baby Name Tournament"),
-			set_default_size: (300, 100),
+			set_default_size: (480, 640),
 
 			gtk::Box {
 				set_orientation: gtk::Orientation::Vertical,
