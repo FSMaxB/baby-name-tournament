@@ -142,10 +142,14 @@ impl SimpleComponent for Application {
 		use ApplicationMessage::*;
 		match message {
 			GenderSelected(gender) => {
-				self.name_list_controller
+				let _ = self
+					.name_list_controller
 					.sender()
-					.send(NameListInput::UpdateFilter(gender))
-					.expect("Failed to send gender");
+					.send(NameListInput::UpdateFilter(gender));
+				let _ = self
+					.name_detail_view_controller
+					.sender()
+					.send(NameDetailViewInput::SetGender(gender));
 			}
 			NameSelected(name) => {
 				let _ = self

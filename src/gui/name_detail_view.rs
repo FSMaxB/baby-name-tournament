@@ -1,3 +1,4 @@
+use crate::csv_parser::Gender;
 use crate::database;
 use crate::database::Name;
 use crate::gui::backend::Backend;
@@ -61,6 +62,7 @@ impl SimpleComponent for NameDetailView {
 	fn init((backend, name): Self::Init, _root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let filter = SimilarNameListViewFilter {
 			name: name.name.clone(),
+			gender: name.gender,
 			threshold: 3.0,
 		};
 
@@ -89,6 +91,9 @@ impl SimpleComponent for NameDetailView {
 				self.filter.name = self.name.name.clone();
 				self.filter.threshold = 3.0;
 			}
+			SetGender(gender) => {
+				self.filter.gender = gender;
+			}
 			UpdateThreshold(threshold) => {
 				self.filter.threshold = threshold;
 			}
@@ -104,6 +109,7 @@ impl SimpleComponent for NameDetailView {
 #[derive(Debug)]
 pub enum NameDetailViewInput {
 	SetName(Name),
+	SetGender(Gender),
 	UpdateThreshold(f64),
 }
 
@@ -113,6 +119,7 @@ struct SimilarNameListView;
 #[derive(Clone, Debug)]
 struct SimilarNameListViewFilter {
 	name: String,
+	gender: Gender,
 	threshold: f64,
 }
 
@@ -120,20 +127,39 @@ impl DatabaseView for SimilarNameListView {
 	type Model = Name;
 	type Filter = SimilarNameListViewFilter;
 
-	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
+	fn read_at_offset(
+		&self,
+		backend: &Backend,
+		SimilarNameListViewFilter {
+			name,
+			gender,
+			threshold,
+		}: &Self::Filter,
+		offset: u32,
+	) -> anyhow::Result<Self::Model> {
 		Ok(backend.block_on_future(database::read_similar_at_offset(
-			&filter.name,
-			filter.threshold,
+			&name,
+			*gender,
+			*threshold,
 			offset.into(),
 			backend.database_pool(),
 		))?)
 	}
 
-	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
+	fn count(
+		&self,
+		backend: &Backend,
+		SimilarNameListViewFilter {
+			name,
+			gender,
+			threshold,
+		}: &Self::Filter,
+	) -> u32 {
 		backend
 			.block_on_future(database::count_similar(
-				&filter.name,
-				filter.threshold,
+				name,
+				*gender,
+				*threshold,
 				backend.database_pool(),
 			))
 			.unwrap_or_default()
