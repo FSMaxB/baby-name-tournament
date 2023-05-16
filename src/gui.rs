@@ -1,5 +1,6 @@
 use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
+use crate::gui::name_detail_view::NameDetailViewInput;
 use crate::gui::name_list::{NameList, NameListInput, NameListView};
 use crate::gui::runtime_thread::RuntimeThread;
 use gtk::StackTransitionType;
@@ -147,7 +148,10 @@ impl SimpleComponent for Application {
 					.expect("Failed to send gender");
 			}
 			NameSelected(name) => {
-				let _ = self.name_detail_view_controller.sender().send(name);
+				let _ = self
+					.name_detail_view_controller
+					.sender()
+					.send(NameDetailViewInput::SetName(name));
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(1, true);
 				self.back_button.set_visible(true);
