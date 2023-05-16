@@ -1,6 +1,6 @@
 use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
-use crate::gui::name_list::{NameList, NameListInput};
+use crate::gui::name_list::{NameList, NameListInput, NameListView};
 use crate::gui::runtime_thread::RuntimeThread;
 use gtk::StackTransitionType;
 use libadwaita::prelude::*;
@@ -35,7 +35,7 @@ pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> 
 }
 
 struct Application {
-	name_list_controller: Controller<NameList>,
+	name_list_controller: Controller<NameList<NameListView>>,
 	_gender_dropdown_controller: Controller<GenderDropdown>,
 	name_detail_view_controller: Controller<NameDetailView>,
 	stack: gtk::Stack,
@@ -89,7 +89,7 @@ impl SimpleComponent for Application {
 
 	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let name_list_controller = NameList::builder()
-			.launch(backend.clone())
+			.launch((Gender::Both, backend.clone()))
 			.forward(sender.input_sender(), ApplicationMessage::NameSelected);
 		let name_list = name_list_controller.widget().clone();
 
@@ -143,7 +143,7 @@ impl SimpleComponent for Application {
 			GenderSelected(gender) => {
 				self.name_list_controller
 					.sender()
-					.send(NameListInput::GenderFiltered(gender))
+					.send(NameListInput::UpdateFilter(gender))
 					.expect("Failed to send gender");
 			}
 			NameSelected(name) => {
