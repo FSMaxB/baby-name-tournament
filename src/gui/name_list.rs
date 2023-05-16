@@ -132,14 +132,14 @@ impl DatabaseView for NameListView {
 	type Model = Name;
 	type Filter = Gender;
 
-	fn read_at_offset(&self, backend: &Backend, filter: Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
-		let model = backend.block_on_future(database::read_name_at_offset(offset, filter, backend.database_pool()))?;
+	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
+		let model = backend.block_on_future(database::read_name_at_offset(offset, *filter, backend.database_pool()))?;
 		Ok(model)
 	}
 
-	fn count(&self, backend: &Backend, filter: Self::Filter) -> u32 {
+	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
 		backend
-			.block_on_future(database::count_names(filter, backend.database_pool()))
+			.block_on_future(database::count_names(*filter, backend.database_pool()))
 			.expect("Failed to count names") as u32
 	}
 }
