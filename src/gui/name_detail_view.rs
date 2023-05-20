@@ -137,7 +137,7 @@ impl DatabaseView for SimilarNameListView {
 		}: &Self::Filter,
 		offset: u32,
 	) -> anyhow::Result<Self::Model> {
-		Ok(backend.block_on_future(database::read_similar_at_offset(
+		Ok(backend.block_on_future(database::views::read_similar_at_offset(
 			&name,
 			*gender,
 			*threshold,
@@ -156,7 +156,7 @@ impl DatabaseView for SimilarNameListView {
 		}: &Self::Filter,
 	) -> u32 {
 		backend
-			.block_on_future(database::count_similar(
+			.block_on_future(database::views::count_similar(
 				name,
 				*gender,
 				*threshold,
