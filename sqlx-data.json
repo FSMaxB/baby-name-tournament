@@ -42,31 +42,7 @@
     },
     "query": "\n\t\tSELECT\n\t\t\tcount(*) as \"count!\"\n\t\tFROM names\n\t\tWHERE\n\t\t\tCASE $1\n\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\tEND\n\t\t"
   },
-  "64b3e3d86485b184fb042432b63ce4a40ddf69374b301c766e8237825b86854f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name!",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "gender!: Gender",
-          "ordinal": 1,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n\t\tSELECT\n\t\t\tname as \"name!\",\n\t\t\tgender as \"gender!: Gender\"\n\t\tFROM similarities\n\t\tINNER JOIN names ON\n\t\t\tb = name\n\t\tWHERE\n\t\t\t(a = $0)\n\t\t\tAND (levenshtein < $1)\n\t\tORDER BY b DESC\n\t\tLIMIT $2\n\t\tOFFSET $3\n\t\t"
-  },
-  "8768c15f209d0de8613be9d93c1f711856874835aa514dd790654637b0559196": {
+  "8465250b59cbb5caa0ad63a8fea0a3446520553a84ce16a5dfd94afd7580700e": {
     "describe": {
       "columns": [
         {
@@ -79,10 +55,10 @@
         false
       ],
       "parameters": {
-        "Right": 2
+        "Right": 3
       }
     },
-    "query": "\n\t\tSELECT\n\t\t\tcount(*)\n\t\tFROM similarities\n\t\tWHERE\n\t\t\t(a = $0)\n\t\t\tAND (levenshtein < $1)\n\t\t"
+    "query": "\n\t\tSELECT\n\t\t\tcount(*)\n\t\tFROM similarities\n\t\tINNER JOIN names ON\n\t\t\tb = name\n\t\tWHERE\n\t\t\t(a = $1)\n\t\t\tAND (a != b)\n\t\t\tAND\n\t\t\t\tCASE $2\n\t\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\t\tEND\n\t\t\tAND (levenshtein < $3)\n\t\t"
   },
   "8888067d3205499f00ce1669c7d7de3bd88826fb9b1d78c9cac098b8b3d6ea60": {
     "describe": {
@@ -151,6 +127,30 @@
       }
     },
     "query": "\n\t\tSELECT\n\t\t\tname as \"name!\",\n\t\t\tgender as \"gender!: Gender\"\n\t\tFROM names\n\t\tWHERE\n\t\t\tCASE $1\n\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\tEND\n\t\tORDER BY name ASC\n\t\tLIMIT 1\n\t\tOFFSET $2\n\t\t"
+  },
+  "c5ab1af80960aacbbc89f69043eb2ed8898bdee42bec5a0c58611322bef394fe": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name!",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "gender!: Gender",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n\t\tSELECT\n\t\t\tname as \"name!\",\n\t\t\tgender as \"gender!: Gender\"\n\t\tFROM similarities\n\t\tINNER JOIN names ON\n\t\t\tb = name\n\t\tWHERE\n\t\t\t(a = $1)\n\t\t\tAND (a != b)\n\t\t\tAND\n\t\t\t\tCASE $2\n\t\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\t\tEND\n\t\t\tAND (levenshtein < $3)\n\t\tORDER BY b DESC\n\t\tLIMIT -1\n\t\tOFFSET $4\n\t\t"
   },
   "ed1d76caa95d45cad60ff1c2e26549f0f3cf863eeb803dbede7744e38044c1e2": {
     "describe": {
