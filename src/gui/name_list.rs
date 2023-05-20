@@ -12,20 +12,25 @@ use relm4::{Component, ComponentParts, ComponentSender, SimpleComponent};
 use relm4::{ComponentController, Controller};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 mod name_list_row;
 
-pub struct NameList {
-	list_manager: DatabaseListManager<NameListView>,
+pub struct NameList<VIEW: DatabaseView> {
+	list_manager: DatabaseListManager<VIEW>,
 	backend: Backend,
 }
 
 #[relm4::component(pub)]
-impl SimpleComponent for NameList {
-	type Input = NameListInput;
+impl<VIEW> SimpleComponent for NameList<VIEW>
+where
+	VIEW: DatabaseView<Model = Name> + Default + Clone,
+	VIEW::Filter: Debug,
+{
+	type Input = NameListInput<VIEW::Filter>;
 	type Output = Name;
-	type Init = Backend;
+	type Init = (VIEW::Filter, Backend);
 
 	view! {
 		gtk::Box {
@@ -41,7 +46,11 @@ impl SimpleComponent for NameList {
 		}
 	}
 
-	fn init(backend: Self::Init, _root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init(
+		(initial_filter, backend): Self::Init,
+		_root: &Self::Root,
+		sender: ComponentSender<Self>,
+	) -> ComponentParts<Self> {
 		let widgets = view_output!();
 
 		let name_factory = SignalListItemFactory::new();
@@ -82,14 +91,11 @@ impl SimpleComponent for NameList {
 			}
 		});
 
-		name_factory.connect_teardown({
-			let controllers = controllers.clone();
-			move |_, list_item| {
-				controllers.borrow_mut().remove(&list_item.as_ptr());
-			}
+		name_factory.connect_teardown(move |_, list_item| {
+			controllers.borrow_mut().remove(&list_item.as_ptr());
 		});
 
-		let list_manager = DatabaseListManager::new(Gender::Both, NameListView::default());
+		let list_manager = DatabaseListManager::new(initial_filter, VIEW::default());
 		let list_model = DatabaseListModel::new(backend.clone(), list_manager.clone());
 		let selection_model = SingleSelection::new(Some(list_model));
 		widgets.name_list.set_factory(Some(&name_factory));
@@ -114,7 +120,7 @@ impl SimpleComponent for NameList {
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		use NameListInput::*;
 		match message {
-			GenderFiltered(gender) => self.list_manager.update_filter(&self.backend, gender),
+			UpdateFilter(filter) => self.list_manager.update_filter(&self.backend, filter),
 			NameSelected(name) => {
 				let _ = sender.output_sender().send(name);
 			}
@@ -123,26 +129,26 @@ impl SimpleComponent for NameList {
 }
 
 #[derive(Debug)]
-pub enum NameListInput {
-	GenderFiltered(Gender),
+pub enum NameListInput<FILTER> {
+	UpdateFilter(FILTER),
 	NameSelected(Name),
 }
 
 #[derive(Clone, Default)]
-struct NameListView;
+pub struct NameListView;
 
 impl DatabaseView for NameListView {
 	type Model = Name;
 	type Filter = Gender;
 
-	fn read_at_offset(&self, backend: &Backend, filter: Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
-		let model = backend.block_on_future(database::read_name_at_offset(offset, filter, backend.database_pool()))?;
+	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
+		let model = backend.block_on_future(database::read_name_at_offset(offset, *filter, backend.database_pool()))?;
 		Ok(model)
 	}
 
-	fn count(&self, backend: &Backend, filter: Self::Filter) -> u32 {
+	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
 		backend
-			.block_on_future(database::count_names(filter, backend.database_pool()))
+			.block_on_future(database::count_names(*filter, backend.database_pool()))
 			.expect("Failed to count names") as u32
 	}
 }

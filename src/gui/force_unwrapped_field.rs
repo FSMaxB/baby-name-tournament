@@ -29,7 +29,7 @@ impl<T> ForceUnwrappedField<T> {
 	}
 
 	pub fn initialize(&self, value: T) {
-		if let Err(_) = self.try_initialize(value) {
+		if self.try_initialize(value).is_err() {
 			panic!(
 				"Tried to initialize field of type {} that was already initialized",
 				std::any::type_name::<T>()

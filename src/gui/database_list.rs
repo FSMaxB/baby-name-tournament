@@ -8,8 +8,8 @@ use crate::gui::backend::Backend;
 
 pub trait DatabaseView: 'static {
 	type Model;
-	type Filter: Copy;
+	type Filter: Clone;
 
-	fn read_at_offset(&self, backend: &Backend, filter: Self::Filter, offset: u32) -> anyhow::Result<Self::Model>;
-	fn count(&self, backend: &Backend, filter: Self::Filter) -> u32;
+	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model>;
+	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32;
 }
