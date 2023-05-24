@@ -164,14 +164,25 @@ pub enum NameListOutput {
 #[derive(Clone, Default)]
 pub struct NameListView;
 
+#[derive(Clone, Debug)]
+pub struct NameListViewFilter {
+	pub gender: Gender,
+}
+
+impl Default for NameListViewFilter {
+	fn default() -> Self {
+		Self { gender: Gender::Both }
+	}
+}
+
 impl DatabaseView for NameListView {
 	type Model = NameWithPreferences;
-	type Filter = Gender;
+	type Filter = NameListViewFilter;
 
 	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
 		let model = backend.block_on_future(database::views::read_name_at_offset(
 			offset,
-			*filter,
+			filter.gender,
 			backend.database_pool(),
 		))?;
 		Ok(model)
@@ -179,7 +190,7 @@ impl DatabaseView for NameListView {
 
 	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
 		backend
-			.block_on_future(database::views::count_names(*filter, backend.database_pool()))
+			.block_on_future(database::views::count_names(filter.gender, backend.database_pool()))
 			.expect("Failed to count names") as u32
 	}
 }

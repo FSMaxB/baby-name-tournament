@@ -1,7 +1,7 @@
 use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::name_detail_view::{NameDetailViewInput, NameDetailViewOutput};
-use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView};
+use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
 use crate::gui::runtime_thread::RuntimeThread;
 use gtk::StackTransitionType;
 use libadwaita::prelude::*;
@@ -45,6 +45,7 @@ struct Application {
 	stack: gtk::Stack,
 	back_button: gtk::Button,
 	backend: Backend,
+	filter: NameListViewFilter,
 }
 
 #[derive(Debug)]
@@ -95,15 +96,14 @@ impl SimpleComponent for Application {
 
 	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		// TODO: Pull main view out
-		let name_list_controller =
-			NameList::builder()
-				.launch((Gender::Both, backend.clone()))
-				.forward(sender.input_sender(), |output| match output {
-					NameListOutput::NameSelected(name) => ApplicationMessage::NameSelected(name),
-					NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
-						ApplicationMessage::NamePreferenceUpdated(name_with_preferences)
-					}
-				});
+		let name_list_controller = NameList::builder()
+			.launch((NameListViewFilter::default(), backend.clone()))
+			.forward(sender.input_sender(), |output| match output {
+				NameListOutput::NameSelected(name) => ApplicationMessage::NameSelected(name),
+				NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
+					ApplicationMessage::NamePreferenceUpdated(name_with_preferences)
+				}
+			});
 		let name_list = name_list_controller.widget().clone();
 
 		let gender_dropdown_controller = GenderDropdown::builder()
@@ -148,6 +148,7 @@ impl SimpleComponent for Application {
 			stack: stack.clone(),
 			back_button: back_button.clone(),
 			backend,
+			filter: Default::default(),
 		};
 
 		let widgets = view_output!();
@@ -159,10 +160,11 @@ impl SimpleComponent for Application {
 		use ApplicationMessage::*;
 		match message {
 			GenderSelected(gender) => {
+				self.filter.gender = gender;
 				let _ = self
 					.name_list_controller
 					.sender()
-					.send(NameListInput::UpdateFilter(gender));
+					.send(NameListInput::UpdateFilter(self.filter.clone()));
 				let _ = self
 					.name_detail_view_controller
 					.sender()
