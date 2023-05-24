@@ -121,6 +121,15 @@ pub struct Name {
 	pub gender: Gender,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, sqlx::Type, strum::AsRefStr)]
+#[sqlx(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum NamePreference {
+	Neutral,
+	Favorite,
+	NoGo,
+}
+
 pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> {
 	const BULK_SIZE: i64 = 10;
 	let database_pool = database_pool.clone();
@@ -216,6 +225,33 @@ pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Re
 	)
 	.fetch_one(database_pool)
 	.await
+}
+
+pub async fn upsert_name_preference(
+	name: &str,
+	mother_preference: NamePreference,
+	father_preference: NamePreference,
+	database_pool: &SqlitePool,
+) -> sqlx::Result<()> {
+	sqlx::query!(
+		r#"
+		INSERT INTO parent_name_preferences (
+			name,
+			mother_preference,
+			father_preference
+		) VALUES ($1, $2, $3)
+		ON CONFLICT DO UPDATE
+		SET
+			mother_preference = $2,
+			father_preference = $3
+		"#,
+		name,
+		mother_preference,
+		father_preference,
+	)
+	.execute(database_pool)
+	.await?;
+	Ok(())
 }
 
 pub mod views;

@@ -1,9 +1,10 @@
 use crate::csv_parser::Gender;
 use crate::database;
-use crate::database::Name;
+use crate::database::views::NameWithPreferences;
+use crate::database::{Name, NamePreference};
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
-use crate::gui::name_list::name_list_row::NameListRow;
+use crate::gui::name_list::name_list_row::{NameListRow, NameListRowInit, NameListRowInput, NameListRowOutput};
 use gtk::{prelude::*, PolicyType, SignalListItemFactory, SingleSelection};
 use libadwaita::glib::BoxedAnyObject;
 use libadwaita::gtk;
@@ -25,11 +26,11 @@ pub struct NameList<VIEW: DatabaseView> {
 #[relm4::component(pub)]
 impl<VIEW> SimpleComponent for NameList<VIEW>
 where
-	VIEW: DatabaseView<Model = Name> + Default + Clone,
+	VIEW: DatabaseView<Model = NameWithPreferences> + Default + Clone,
 	VIEW::Filter: Debug,
 {
 	type Input = NameListInput<VIEW::Filter>;
-	type Output = Name;
+	type Output = NameListOutput;
 	type Init = (VIEW::Filter, Backend);
 
 	view! {
@@ -63,11 +64,19 @@ where
 			let controllers = controllers.clone();
 			move |_, list_item| {
 				let controller = NameListRow::builder()
-					.launch(Name {
-						name: "<none>".to_owned(),
-						gender: Gender::Both,
+					.launch(NameListRowInit {
+						name: Name {
+							name: "<none>".to_owned(),
+							gender: Gender::Both,
+						},
+						mother_preference: NamePreference::Neutral,
+						father_preference: NamePreference::Neutral,
 					})
-					.forward(sender.input_sender(), |_| unreachable!());
+					.forward(sender.input_sender(), |output| match output {
+						NameListRowOutput::NamePreferenceSet(name_with_preferences) => {
+							NameListInput::NamePreferenceUpdated(name_with_preferences)
+						}
+					});
 				list_item.set_child(Some(controller.widget()));
 				controllers.borrow_mut().insert(list_item.as_ptr(), controller);
 			}
@@ -85,9 +94,11 @@ where
 					.expect("Missing item")
 					.downcast::<BoxedAnyObject>()
 					.expect("Incorrect Type");
-				let name = item.borrow::<Name>();
+				let name_with_preferences = item.borrow::<NameWithPreferences>();
 
-				let _ = controller.sender().send(name.clone());
+				let _ = controller
+					.sender()
+					.send(NameListRowInput::SetName(name_with_preferences.clone()));
 			}
 		});
 
@@ -106,10 +117,10 @@ where
 			let backend = backend.clone();
 			let input_sender = sender.input_sender().clone();
 			move |_, position| {
-				let Ok(name) = list_manager.read_at_offset(&backend, position) else {
+				let Ok(NameWithPreferences {name, gender, ..}) = list_manager.read_at_offset(&backend, position) else {
 					return;
 				};
-				let _ = input_sender.send(NameListInput::NameSelected(name));
+				let _ = input_sender.send(NameListInput::NameSelected(Name { name, gender }));
 			}
 		});
 
@@ -122,7 +133,15 @@ where
 		match message {
 			UpdateFilter(filter) => self.list_manager.update_filter(&self.backend, filter),
 			NameSelected(name) => {
-				let _ = sender.output_sender().send(name);
+				let _ = sender.output_sender().send(NameListOutput::NameSelected(name));
+			}
+			NamePreferenceUpdated(name_with_preferences) => {
+				let _ = sender
+					.output_sender()
+					.send(NameListOutput::NamePreferenceUpdated(name_with_preferences));
+			}
+			Refresh => {
+				self.list_manager.notify_changed(&self.backend);
 			}
 		}
 	}
@@ -132,13 +151,21 @@ where
 pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
 	NameSelected(Name),
+	NamePreferenceUpdated(NameWithPreferences),
+	Refresh,
+}
+
+#[derive(Debug)]
+pub enum NameListOutput {
+	NameSelected(Name),
+	NamePreferenceUpdated(NameWithPreferences),
 }
 
 #[derive(Clone, Default)]
 pub struct NameListView;
 
 impl DatabaseView for NameListView {
-	type Model = Name;
+	type Model = NameWithPreferences;
 	type Filter = Gender;
 
 	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {

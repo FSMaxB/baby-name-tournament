@@ -1,9 +1,10 @@
 use crate::csv_parser::Gender;
 use crate::database;
+use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::DatabaseView;
-use crate::gui::name_list::{NameList, NameListInput};
+use crate::gui::name_list::{NameList, NameListInput, NameListOutput};
 use gtk::{Adjustment, Align, Label, Orientation};
 use libadwaita::prelude::*;
 use relm4::{gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
@@ -17,7 +18,7 @@ pub struct NameDetailView {
 #[relm4::component(pub)]
 impl SimpleComponent for NameDetailView {
 	type Input = NameDetailViewInput;
-	type Output = std::convert::Infallible;
+	type Output = NameDetailViewOutput;
 	type Init = (Backend, Name);
 
 	view! {
@@ -68,7 +69,12 @@ impl SimpleComponent for NameDetailView {
 
 		let similar_name_list_controller = NameList::<SimilarNameListView>::builder()
 			.launch((filter.clone(), backend))
-			.forward(sender.input_sender(), NameDetailViewInput::SetName);
+			.forward(sender.input_sender(), |output| match output {
+				NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
+					NameDetailViewInput::UpdateNamePreferences(name_with_preferences)
+				}
+				NameListOutput::NameSelected(name) => NameDetailViewInput::SetName(name),
+			});
 
 		let similar_name_list = similar_name_list_controller.widget().clone();
 
@@ -83,7 +89,7 @@ impl SimpleComponent for NameDetailView {
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		use NameDetailViewInput::*;
 		match message {
 			SetName(name) => {
@@ -96,6 +102,12 @@ impl SimpleComponent for NameDetailView {
 			}
 			UpdateThreshold(threshold) => {
 				self.filter.threshold = threshold;
+			}
+			UpdateNamePreferences(name_with_preferences) => {
+				let _ = sender
+					.output_sender()
+					.send(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
+				return; // don't update the filter
 			}
 		};
 
@@ -110,7 +122,13 @@ impl SimpleComponent for NameDetailView {
 pub enum NameDetailViewInput {
 	SetName(Name),
 	SetGender(Gender),
+	UpdateNamePreferences(NameWithPreferences),
 	UpdateThreshold(f64),
+}
+
+#[derive(Debug)]
+pub enum NameDetailViewOutput {
+	NamePreferenceSet(NameWithPreferences),
 }
 
 #[derive(Clone, Default)]
@@ -124,7 +142,7 @@ struct SimilarNameListViewFilter {
 }
 
 impl DatabaseView for SimilarNameListView {
-	type Model = Name;
+	type Model = NameWithPreferences;
 	type Filter = SimilarNameListViewFilter;
 
 	fn read_at_offset(
@@ -138,7 +156,7 @@ impl DatabaseView for SimilarNameListView {
 		offset: u32,
 	) -> anyhow::Result<Self::Model> {
 		Ok(backend.block_on_future(database::views::read_similar_at_offset(
-			&name,
+			name,
 			*gender,
 			*threshold,
 			offset.into(),

@@ -1,7 +1,7 @@
 use crate::csv_parser::Gender;
 use crate::gui::gender_dropdown::GenderDropdown;
-use crate::gui::name_detail_view::NameDetailViewInput;
-use crate::gui::name_list::{NameList, NameListInput, NameListView};
+use crate::gui::name_detail_view::{NameDetailViewInput, NameDetailViewOutput};
+use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView};
 use crate::gui::runtime_thread::RuntimeThread;
 use gtk::StackTransitionType;
 use libadwaita::prelude::*;
@@ -20,8 +20,11 @@ mod force_unwrapped_field;
 mod gender_dropdown;
 mod name_detail_view;
 mod name_list;
+mod name_preference;
 mod runtime_thread;
 
+use crate::database;
+use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::name_detail_view::NameDetailView;
 use backend::Backend;
@@ -41,12 +44,14 @@ struct Application {
 	name_detail_view_controller: Controller<NameDetailView>,
 	stack: gtk::Stack,
 	back_button: gtk::Button,
+	backend: Backend,
 }
 
 #[derive(Debug)]
 enum ApplicationMessage {
 	GenderSelected(Gender),
 	NameSelected(Name),
+	NamePreferenceUpdated(NameWithPreferences),
 	BackToList,
 }
 
@@ -89,9 +94,16 @@ impl SimpleComponent for Application {
 	}
 
 	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
-		let name_list_controller = NameList::builder()
-			.launch((Gender::Both, backend.clone()))
-			.forward(sender.input_sender(), ApplicationMessage::NameSelected);
+		// TODO: Pull main view out
+		let name_list_controller =
+			NameList::builder()
+				.launch((Gender::Both, backend.clone()))
+				.forward(sender.input_sender(), |output| match output {
+					NameListOutput::NameSelected(name) => ApplicationMessage::NameSelected(name),
+					NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
+						ApplicationMessage::NamePreferenceUpdated(name_with_preferences)
+					}
+				});
 		let name_list = name_list_controller.widget().clone();
 
 		let gender_dropdown_controller = GenderDropdown::builder()
@@ -101,13 +113,17 @@ impl SimpleComponent for Application {
 
 		let name_detail_view_controller = NameDetailView::builder()
 			.launch((
-				backend,
+				backend.clone(),
 				Name {
 					name: "<none>".to_owned(),
 					gender: Gender::Both,
 				},
 			))
-			.forward(sender.input_sender(), |_: std::convert::Infallible| unreachable!());
+			.forward(sender.input_sender(), |message| match message {
+				NameDetailViewOutput::NamePreferenceSet(name_with_preferences) => {
+					ApplicationMessage::NamePreferenceUpdated(name_with_preferences)
+				}
+			});
 		let name_detail_view = name_detail_view_controller.widget().clone();
 
 		let stack = gtk::Stack::new();
@@ -131,6 +147,7 @@ impl SimpleComponent for Application {
 			name_detail_view_controller,
 			stack: stack.clone(),
 			back_button: back_button.clone(),
+			backend,
 		};
 
 		let widgets = view_output!();
@@ -160,10 +177,26 @@ impl SimpleComponent for Application {
 				self.stack.pages().select_item(1, true);
 				self.back_button.set_visible(true);
 			}
+			NamePreferenceUpdated(NameWithPreferences {
+				name,
+				mother_preference,
+				father_preference,
+				..
+			}) => {
+				self.backend
+					.block_on_future(database::upsert_name_preference(
+						&name,
+						mother_preference,
+						father_preference,
+						self.backend.database_pool(),
+					))
+					.expect("Failed to update name preference");
+			}
 			BackToList => {
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(0, true);
 				self.back_button.set_visible(false);
+				let _ = self.name_list_controller.sender().send(NameListInput::Refresh);
 			}
 		}
 	}

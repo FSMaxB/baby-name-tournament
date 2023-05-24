@@ -1,6 +1,14 @@
 use crate::csv_parser::Gender;
-use crate::database::Name;
+use crate::database::NamePreference;
 use sqlx::SqlitePool;
+
+#[derive(Clone, Debug)]
+pub struct NameWithPreferences {
+	pub name: String,
+	pub gender: Gender,
+	pub mother_preference: NamePreference,
+	pub father_preference: NamePreference,
+}
 
 pub async fn read_similar_at_offset(
 	name: &str,
@@ -8,16 +16,20 @@ pub async fn read_similar_at_offset(
 	threshold: f64,
 	offset: i64,
 	database_pool: &SqlitePool,
-) -> sqlx::Result<Name> {
+) -> sqlx::Result<NameWithPreferences> {
 	sqlx::query_as!(
-		Name,
+		NameWithPreferences,
 		r#"
 		SELECT
-			name as "name!",
-			gender as "gender!: Gender"
+			names.name as "name!",
+			gender as "gender!: Gender",
+			coalesce(parent_name_preferences.mother_preference, 'neutral') as "mother_preference!: NamePreference",
+			coalesce(parent_name_preferences.father_preference, 'neutral') as "father_preference!: NamePreference"
 		FROM similarities
 		INNER JOIN names ON
-			b = name
+			b = names.name
+		LEFT JOIN parent_name_preferences
+			ON names.name = parent_name_preferences.name
 		WHERE
 			(a = $1)
 			AND (a != b)
@@ -74,21 +86,29 @@ pub async fn count_similar(
 	.map(Option::unwrap_or_default)
 }
 
-pub async fn read_name_at_offset(offset: u32, gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
+pub async fn read_name_at_offset(
+	offset: u32,
+	gender: Gender,
+	database_pool: &SqlitePool,
+) -> sqlx::Result<NameWithPreferences> {
 	sqlx::query_as!(
-		Name,
+		NameWithPreferences,
 		r#"
 		SELECT
-			name as "name!",
-			gender as "gender!: Gender"
+			names.name as "name!",
+			gender as "gender!: Gender",
+			coalesce(parent_name_preferences.mother_preference, 'neutral') as "mother_preference!: NamePreference",
+			coalesce(parent_name_preferences.father_preference, 'neutral') as "father_preference!: NamePreference"
 		FROM names
+		LEFT JOIN parent_name_preferences
+			ON names.name = parent_name_preferences.name
 		WHERE
 			CASE $1
 				WHEN 'both' THEN TRUE
 				WHEN 'female' THEN gender != 'male'
 				WHEN 'male' THEN gender != 'female'
 			END
-		ORDER BY name ASC
+		ORDER BY names.name ASC
 		LIMIT 1
 		OFFSET $2
 		"#,
