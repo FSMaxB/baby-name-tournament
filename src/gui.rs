@@ -3,7 +3,7 @@ use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::name_detail_view::{NameDetailViewInput, NameDetailViewOutput};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
 use crate::gui::runtime_thread::RuntimeThread;
-use gtk::StackTransitionType;
+use gtk::{Align, Orientation, StackTransitionType};
 use libadwaita::prelude::*;
 use libadwaita::HeaderBar;
 use relm4::{
@@ -44,6 +44,10 @@ struct Application {
 	name_detail_view_controller: Controller<NameDetailView>,
 	stack: gtk::Stack,
 	back_button: gtk::Button,
+	// TODO: Per parent filters? (anything else is kind of confusing)
+	show_favorite_checkbox: gtk::CheckButton,
+	show_nogo_checkbox: gtk::CheckButton,
+	show_neutral_checkbox: gtk::CheckButton,
 	backend: Backend,
 	filter: NameListViewFilter,
 }
@@ -53,6 +57,7 @@ enum ApplicationMessage {
 	GenderSelected(Gender),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
+	UpdateNamePreferenceFilter,
 	BackToList,
 }
 
@@ -68,7 +73,7 @@ impl SimpleComponent for Application {
 			set_default_size: (480, 640),
 
 			gtk::Box {
-				set_orientation: gtk::Orientation::Vertical,
+				set_orientation: Orientation::Vertical,
 
 				HeaderBar {
 					pack_start: &back_button,
@@ -79,9 +84,47 @@ impl SimpleComponent for Application {
 					set_transition_type: StackTransitionType::SlideLeftRight,
 
 					gtk::Box {
-						set_orientation: gtk::Orientation::Vertical,
+						set_orientation: Orientation::Vertical,
+
 						#[local]
 						gender_dropdown -> gtk::DropDown {},
+
+						gtk::Box {
+							set_orientation: Orientation::Horizontal,
+							set_halign: Align::Center,
+							set_spacing: 12,
+
+							#[local]
+							show_favorite_checkbox -> gtk::CheckButton {
+								set_active: model.filter.show_favorite,
+								connect_toggled[sender] => move |_| {
+									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+								}
+							},
+							gtk::Image {
+								set_from_icon_name: Some("emblem-favorite-symbolic"),
+							},
+
+							#[local]
+							show_nogo_checkbox -> gtk::CheckButton {
+								set_active: model.filter.show_nogo,
+								connect_toggled[sender] => move |_| {
+									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+								}
+							},
+							gtk::Image {
+								set_from_icon_name: Some("action-unavailable-symbolic"),
+							},
+
+							#[local]
+							show_neutral_checkbox -> gtk::CheckButton {
+								set_label: Some("Neutral"),
+								set_active: model.filter.show_neutral,
+								connect_toggled[sender] => move |_| {
+									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+								}
+							},
+						},
 
 						#[local]
 						name_list -> gtk::Box {},
@@ -141,12 +184,18 @@ impl SimpleComponent for Application {
 			}
 		});
 
+		let show_favorite_checkbox = gtk::CheckButton::new();
+		let show_nogo_checkbox = gtk::CheckButton::new();
+		let show_neutral_checkbox = gtk::CheckButton::new();
 		let model = Self {
 			name_list_controller,
 			_gender_dropdown_controller: gender_dropdown_controller,
 			name_detail_view_controller,
 			stack: stack.clone(),
 			back_button: back_button.clone(),
+			show_favorite_checkbox: show_favorite_checkbox.clone(),
+			show_nogo_checkbox: show_nogo_checkbox.clone(),
+			show_neutral_checkbox: show_neutral_checkbox.clone(),
 			backend,
 			filter: Default::default(),
 		};
@@ -193,6 +242,16 @@ impl SimpleComponent for Application {
 						self.backend.database_pool(),
 					))
 					.expect("Failed to update name preference");
+			}
+			UpdateNamePreferenceFilter => {
+				self.filter.show_favorite = self.show_favorite_checkbox.is_active();
+				self.filter.show_nogo = self.show_nogo_checkbox.is_active();
+				self.filter.show_neutral = self.show_neutral_checkbox.is_active();
+
+				let _ = self
+					.name_list_controller
+					.sender()
+					.send(NameListInput::UpdateFilter(self.filter.clone()));
 			}
 			BackToList => {
 				// TODO: Make this better than based on position

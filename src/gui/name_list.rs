@@ -167,11 +167,19 @@ pub struct NameListView;
 #[derive(Clone, Debug)]
 pub struct NameListViewFilter {
 	pub gender: Gender,
+	pub show_favorite: bool,
+	pub show_nogo: bool,
+	pub show_neutral: bool,
 }
 
 impl Default for NameListViewFilter {
 	fn default() -> Self {
-		Self { gender: Gender::Both }
+		Self {
+			gender: Gender::Both,
+			show_favorite: true,
+			show_nogo: true,
+			show_neutral: true,
+		}
 	}
 }
 
@@ -183,6 +191,9 @@ impl DatabaseView for NameListView {
 		let model = backend.block_on_future(database::views::read_name_at_offset(
 			offset,
 			filter.gender,
+			filter.show_favorite,
+			filter.show_nogo,
+			filter.show_neutral,
 			backend.database_pool(),
 		))?;
 		Ok(model)
@@ -190,7 +201,13 @@ impl DatabaseView for NameListView {
 
 	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
 		backend
-			.block_on_future(database::views::count_names(filter.gender, backend.database_pool()))
+			.block_on_future(database::views::count_names(
+				filter.gender,
+				filter.show_favorite,
+				filter.show_nogo,
+				filter.show_neutral,
+				backend.database_pool(),
+			))
 			.expect("Failed to count names") as u32
 	}
 }

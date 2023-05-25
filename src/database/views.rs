@@ -89,6 +89,9 @@ pub async fn count_similar(
 pub async fn read_name_at_offset(
 	offset: u32,
 	gender: Gender,
+	include_favorite: bool,
+	include_nogo: bool,
+	include_neutral: bool,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<NameWithPreferences> {
 	sqlx::query_as!(
@@ -108,31 +111,55 @@ pub async fn read_name_at_offset(
 				WHEN 'female' THEN gender != 'male'
 				WHEN 'male' THEN gender != 'female'
 			END
+			AND (
+				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
+				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
+				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
+			)
 		ORDER BY names.name ASC
 		LIMIT 1
-		OFFSET $2
+		OFFSET $5
 		"#,
 		gender,
+		include_favorite,
+		include_nogo,
+		include_neutral,
 		offset,
 	)
 	.fetch_one(database_pool)
 	.await
 }
 
-pub async fn count_names(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<i32> {
+pub async fn count_names(
+	gender: Gender,
+	include_favorite: bool,
+	include_nogo: bool,
+	include_neutral: bool,
+	database_pool: &SqlitePool,
+) -> sqlx::Result<i32> {
 	sqlx::query_scalar!(
 		r#"
 		SELECT
 			count(*) as "count!"
 		FROM names
+		LEFT JOIN parent_name_preferences
+			ON names.name = parent_name_preferences.name
 		WHERE
 			CASE $1
 				WHEN 'both' THEN TRUE
 				WHEN 'female' THEN gender != 'male'
 				WHEN 'male' THEN gender != 'female'
 			END
+			AND (
+				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
+				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
+				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
+			)
 		"#,
 		gender,
+		include_favorite,
+		include_nogo,
+		include_neutral,
 	)
 	.fetch_one(database_pool)
 	.await
