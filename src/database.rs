@@ -121,6 +121,15 @@ pub struct Name {
 	pub gender: Gender,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, sqlx::Type, strum::AsRefStr)]
+#[sqlx(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum NamePreference {
+	Neutral,
+	Favorite,
+	NoGo,
+}
+
 pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> {
 	const BULK_SIZE: i64 = 10;
 	let database_pool = database_pool.clone();
@@ -195,50 +204,6 @@ pub fn list_all_pairs(database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Re
 	.try_flatten()
 }
 
-pub async fn read_name_at_offset(offset: u32, gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
-	sqlx::query_as!(
-		Name,
-		r#"
-		SELECT
-			name as "name!",
-			gender as "gender!: Gender"
-		FROM names
-		WHERE
-			CASE $1
-				WHEN 'both' THEN TRUE
-				WHEN 'female' THEN gender != 'male'
-				WHEN 'male' THEN gender != 'female'
-			END
-		ORDER BY name ASC
-		LIMIT 1
-		OFFSET $2
-		"#,
-		gender,
-		offset,
-	)
-	.fetch_one(database_pool)
-	.await
-}
-
-pub async fn count_names(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<i32> {
-	sqlx::query_scalar!(
-		r#"
-		SELECT
-			count(*) as "count!"
-		FROM names
-		WHERE
-			CASE $1
-				WHEN 'both' THEN TRUE
-				WHEN 'female' THEN gender != 'male'
-				WHEN 'male' THEN gender != 'female'
-			END
-		"#,
-		gender,
-	)
-	.fetch_one(database_pool)
-	.await
-}
-
 pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Result<Name> {
 	sqlx::query_as!(
 		Name,
@@ -262,74 +227,31 @@ pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Re
 	.await
 }
 
-pub async fn read_similar_at_offset(
+pub async fn upsert_name_preference(
 	name: &str,
-	gender: Gender,
-	threshold: f64,
-	offset: i64,
+	mother_preference: NamePreference,
+	father_preference: NamePreference,
 	database_pool: &SqlitePool,
-) -> sqlx::Result<Name> {
-	sqlx::query_as!(
-		Name,
+) -> sqlx::Result<()> {
+	sqlx::query!(
 		r#"
-		SELECT
-			name as "name!",
-			gender as "gender!: Gender"
-		FROM similarities
-		INNER JOIN names ON
-			b = name
-		WHERE
-			(a = $1)
-			AND (a != b)
-			AND
-				CASE $2
-					WHEN 'both' THEN TRUE
-					WHEN 'female' THEN gender != 'male'
-					WHEN 'male' THEN gender != 'female'
-				END
-			AND (levenshtein < $3)
-		ORDER BY b DESC
-		LIMIT -1
-		OFFSET $4
+		INSERT INTO parent_name_preferences (
+			name,
+			mother_preference,
+			father_preference
+		) VALUES ($1, $2, $3)
+		ON CONFLICT DO UPDATE
+		SET
+			mother_preference = $2,
+			father_preference = $3
 		"#,
 		name,
-		gender,
-		threshold,
-		offset
+		mother_preference,
+		father_preference,
 	)
-	.fetch_one(database_pool)
-	.await
+	.execute(database_pool)
+	.await?;
+	Ok(())
 }
 
-pub async fn count_similar(
-	name: &str,
-	gender: Gender,
-	threshold: f64,
-	database_pool: &SqlitePool,
-) -> sqlx::Result<i32> {
-	sqlx::query_scalar!(
-		r#"
-		SELECT
-			count(*)
-		FROM similarities
-		INNER JOIN names ON
-			b = name
-		WHERE
-			(a = $1)
-			AND (a != b)
-			AND
-				CASE $2
-					WHEN 'both' THEN TRUE
-					WHEN 'female' THEN gender != 'male'
-					WHEN 'male' THEN gender != 'female'
-				END
-			AND (levenshtein < $3)
-		"#,
-		name,
-		gender,
-		threshold,
-	)
-	.fetch_optional(database_pool)
-	.await
-	.map(Option::unwrap_or_default)
-}
+pub mod views;
