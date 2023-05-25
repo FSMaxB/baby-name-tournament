@@ -170,6 +170,7 @@ pub struct NameListViewFilter {
 	pub show_favorite: bool,
 	pub show_nogo: bool,
 	pub show_neutral: bool,
+	pub name_contains: Option<String>,
 }
 
 impl Default for NameListViewFilter {
@@ -179,6 +180,7 @@ impl Default for NameListViewFilter {
 			show_favorite: true,
 			show_nogo: true,
 			show_neutral: true,
+			name_contains: None,
 		}
 	}
 }
@@ -194,6 +196,7 @@ impl DatabaseView for NameListView {
 			filter.show_favorite,
 			filter.show_nogo,
 			filter.show_neutral,
+			filter.name_contains.as_deref(),
 			backend.database_pool(),
 		))?;
 		Ok(model)
@@ -206,6 +209,7 @@ impl DatabaseView for NameListView {
 				filter.show_favorite,
 				filter.show_nogo,
 				filter.show_neutral,
+				filter.name_contains.as_deref(),
 				backend.database_pool(),
 			))
 			.expect("Failed to count names") as u32

@@ -92,6 +92,7 @@ pub async fn read_name_at_offset(
 	include_favorite: bool,
 	include_nogo: bool,
 	include_neutral: bool,
+	name_contains: Option<&str>,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<NameWithPreferences> {
 	sqlx::query_as!(
@@ -116,14 +117,16 @@ pub async fn read_name_at_offset(
 				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
 				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
 			)
+			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
 		ORDER BY names.name ASC
 		LIMIT 1
-		OFFSET $5
+		OFFSET $6
 		"#,
 		gender,
 		include_favorite,
 		include_nogo,
 		include_neutral,
+		name_contains,
 		offset,
 	)
 	.fetch_one(database_pool)
@@ -135,6 +138,7 @@ pub async fn count_names(
 	include_favorite: bool,
 	include_nogo: bool,
 	include_neutral: bool,
+	name_contains: Option<&str>,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<i32> {
 	sqlx::query_scalar!(
@@ -155,11 +159,14 @@ pub async fn count_names(
 				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
 				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
 			)
+			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
+
 		"#,
 		gender,
 		include_favorite,
 		include_nogo,
 		include_neutral,
+		name_contains,
 	)
 	.fetch_one(database_pool)
 	.await

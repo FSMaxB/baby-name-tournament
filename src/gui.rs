@@ -58,6 +58,7 @@ enum ApplicationMessage {
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
 	UpdateNamePreferenceFilter,
+	UpdateSearchTerm(String),
 	BackToList,
 }
 
@@ -85,6 +86,18 @@ impl SimpleComponent for Application {
 
 					gtk::Box {
 						set_orientation: Orientation::Vertical,
+
+						gtk::Box {
+							set_orientation: Orientation::Horizontal,
+							set_homogeneous: true,
+
+							gtk::SearchEntry {
+								set_placeholder_text: Some("Search ..."),
+								connect_search_changed[sender] => move |search_field| {
+									let _ = sender.input_sender().send(ApplicationMessage::UpdateSearchTerm(search_field.text().as_str().to_owned()));
+								}
+							},
+						},
 
 						#[local]
 						gender_dropdown -> gtk::DropDown {},
@@ -247,6 +260,18 @@ impl SimpleComponent for Application {
 				self.filter.show_favorite = self.show_favorite_checkbox.is_active();
 				self.filter.show_nogo = self.show_nogo_checkbox.is_active();
 				self.filter.show_neutral = self.show_neutral_checkbox.is_active();
+
+				let _ = self
+					.name_list_controller
+					.sender()
+					.send(NameListInput::UpdateFilter(self.filter.clone()));
+			}
+			UpdateSearchTerm(search_term) => {
+				self.filter.name_contains = if search_term.trim().is_empty() {
+					None
+				} else {
+					Some(search_term)
+				};
 
 				let _ = self
 					.name_list_controller
