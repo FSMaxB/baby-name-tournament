@@ -114,7 +114,7 @@ pub async fn read_name_at_offset(
 			END
 			AND (
 				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
-				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
+				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
 				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
@@ -156,7 +156,7 @@ pub async fn count_names(
 			END
 			AND (
 				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
-				OR ($3 AND (mother_preference = 'nogo' OR father_preference = 'nogo'))
+				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
 				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
