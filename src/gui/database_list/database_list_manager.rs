@@ -10,6 +10,7 @@ use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct DatabaseListManager<View: DatabaseView> {
+	backend: Backend,
 	filter: Rc<RefCell<View::Filter>>,
 	count: Rc<Cell<u32>>,
 	callback: Callback,
@@ -19,8 +20,9 @@ pub struct DatabaseListManager<View: DatabaseView> {
 type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>;
 
 impl<View: DatabaseView> DatabaseListManager<View> {
-	pub fn new(initial_filter: View::Filter, view: View) -> Self {
+	pub fn new(initial_filter: View::Filter, view: View, backend: Backend) -> Self {
 		Self {
+			backend,
 			filter: Rc::new(RefCell::new(initial_filter)),
 			count: Default::default(),
 			callback: Default::default(),
@@ -28,25 +30,26 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		}
 	}
 
-	pub fn update_filter(&self, backend: &Backend, filter: View::Filter) {
+	pub fn update_filter(&self, filter: View::Filter) {
 		*self.filter.borrow_mut() = filter;
-		self.notify_changed(backend);
+		self.notify_changed();
 	}
 
-	pub fn notify_changed(&self, backend: &Backend) {
+	pub fn notify_changed(&self) {
 		let previous_count = self.count.get();
-		let count = self.view.count(backend, self.filter.borrow().deref());
+		let count = self.view.count(&self.backend, self.filter.borrow().deref());
 		if let Some(callback) = self.callback.get() {
 			callback(previous_count, count);
 		}
 	}
 
-	pub fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<View::Model> {
-		self.view.read_at_offset(backend, self.filter.borrow().deref(), offset)
+	pub fn read_at_offset(&self, offset: u32) -> anyhow::Result<View::Model> {
+		self.view
+			.read_at_offset(&self.backend, self.filter.borrow().deref(), offset)
 	}
 
-	pub(super) fn count(&self, backend: &Backend) -> u32 {
-		let count = self.view.count(backend, self.filter.borrow().deref());
+	pub(super) fn count(&self) -> u32 {
+		let count = self.view.count(&self.backend, self.filter.borrow().deref());
 		self.count.set(count);
 
 		count
@@ -64,19 +67,19 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 }
 
 pub(super) trait DynamicListManager {
-	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<BoxedAnyObject>;
-	fn count(&self, backend: &Backend) -> u32;
+	fn read_at_offset(&self, offset: u32) -> anyhow::Result<BoxedAnyObject>;
+	fn count(&self) -> u32;
 }
 
 assert_obj_safe!(DynamicListManager);
 
 impl<View: DatabaseView> DynamicListManager for DatabaseListManager<View> {
-	fn read_at_offset(&self, backend: &Backend, offset: u32) -> anyhow::Result<BoxedAnyObject> {
-		let object = self.read_at_offset(backend, offset)?;
+	fn read_at_offset(&self, offset: u32) -> anyhow::Result<BoxedAnyObject> {
+		let object = self.read_at_offset(offset)?;
 		Ok(BoxedAnyObject::new(object))
 	}
 
-	fn count(&self, backend: &Backend) -> u32 {
-		self.count(backend)
+	fn count(&self) -> u32 {
+		self.count()
 	}
 }

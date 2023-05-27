@@ -113,7 +113,7 @@ pub async fn similarities(database_pool: SqlitePool) -> anyhow::Result<()> {
 			let database_pool = &database_pool;
 			async move {
 				if should_store {
-					database::upsert_similarity(similarity, &database_pool).await?;
+					database::upsert_similarity(similarity, database_pool).await?;
 				}
 
 				Ok(())
