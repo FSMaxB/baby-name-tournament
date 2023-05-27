@@ -19,6 +19,7 @@ fn connect_options(path: &Path) -> SqliteConnectOptions {
 		.journal_mode(SqliteJournalMode::Wal)
 		.synchronous(SqliteSynchronous::Normal)
 		.auto_vacuum(SqliteAutoVacuum::Incremental)
+		.pragma("mmap_size", (32usize * 1024 * 1024 * 1024).to_string())
 		.create_if_missing(true)
 }
 
