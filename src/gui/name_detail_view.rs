@@ -145,46 +145,6 @@ impl DatabaseView for SimilarNameListView {
 	type Model = NameWithPreferences;
 	type Filter = SimilarNameListViewFilter;
 
-	fn read_at_offset(
-		&self,
-		backend: &Backend,
-		SimilarNameListViewFilter {
-			name,
-			gender,
-			threshold,
-		}: &Self::Filter,
-		offset: u32,
-	) -> anyhow::Result<Self::Model> {
-		Ok(backend.block_on_future(database::views::read_similar_at_offset(
-			name,
-			*gender,
-			*threshold,
-			offset.into(),
-			backend.database_pool(),
-		))?)
-	}
-
-	fn count(
-		&self,
-		backend: &Backend,
-		SimilarNameListViewFilter {
-			name,
-			gender,
-			threshold,
-		}: &Self::Filter,
-	) -> u32 {
-		backend
-			.block_on_future(database::views::count_similar(
-				name,
-				*gender,
-				*threshold,
-				backend.database_pool(),
-			))
-			.unwrap_or_default()
-			.try_into()
-			.expect("Number out of range")
-	}
-
 	fn read_all(
 		&self,
 		backend: &Backend,

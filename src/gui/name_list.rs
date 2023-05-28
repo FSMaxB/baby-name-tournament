@@ -193,53 +193,6 @@ impl DatabaseView for NameListView {
 	type Model = NameWithPreferences;
 	type Filter = NameListViewFilter;
 
-	fn read_at_offset(
-		&self,
-		backend: &Backend,
-		NameListViewFilter {
-			gender,
-			show_favorite,
-			show_nogo,
-			show_neutral,
-			name_contains,
-		}: &Self::Filter,
-		offset: u32,
-	) -> anyhow::Result<Self::Model> {
-		let model = backend.block_on_future(database::views::read_name_at_offset(
-			offset,
-			*gender,
-			*show_favorite,
-			*show_nogo,
-			*show_neutral,
-			name_contains.as_deref(),
-			backend.database_pool(),
-		))?;
-		Ok(model)
-	}
-
-	fn count(
-		&self,
-		backend: &Backend,
-		NameListViewFilter {
-			gender,
-			show_favorite,
-			show_nogo,
-			show_neutral,
-			name_contains,
-		}: &Self::Filter,
-	) -> u32 {
-		backend
-			.block_on_future(database::views::count_names(
-				*gender,
-				*show_favorite,
-				*show_nogo,
-				*show_neutral,
-				name_contains.as_deref(),
-				backend.database_pool(),
-			))
-			.expect("Failed to count names") as u32
-	}
-
 	fn read_all(
 		&self,
 		backend: &Backend,

@@ -10,7 +10,5 @@ pub trait DatabaseView: 'static {
 	type Model: Clone;
 	type Filter: Clone;
 
-	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model>;
-	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32;
 	fn read_all(&self, backend: &Backend, filter: &Self::Filter) -> anyhow::Result<Vec<Self::Model>>;
 }
