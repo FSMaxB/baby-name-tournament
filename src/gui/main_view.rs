@@ -3,15 +3,17 @@ use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::gender_dropdown::GenderDropdown;
+use crate::gui::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
-use gtk::{prelude::*, Align, Orientation};
+use gtk::{prelude::*, Orientation};
 use relm4::{gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
+
+mod preference_filter;
 
 pub struct MainView {
 	name_list_controller: Controller<NameList<NameListView>>,
-	show_favorite_checkbox: gtk::CheckButton,
-	show_nogo_checkbox: gtk::CheckButton,
-	show_neutral_checkbox: gtk::CheckButton,
+	_gender_filter_controller: Controller<GenderDropdown>,
+	_name_preference_controller: Controller<PreferenceFilterComponent>,
 	filter: NameListViewFilter,
 }
 
@@ -20,7 +22,7 @@ pub enum MainViewInput {
 	GenderSelected(Gender),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
-	UpdateNamePreferenceFilter,
+	UpdateNamePreferenceFilter(PreferenceFilter),
 	UpdateSearchTerm(String),
 	Refresh,
 }
@@ -57,42 +59,8 @@ impl SimpleComponent for MainView {
 			#[local]
 			gender_dropdown -> gtk::DropDown {},
 
-			gtk::Box {
-				set_orientation: Orientation::Horizontal,
-				set_halign: Align::Center,
-				set_spacing: 12,
-
-				#[local]
-				show_favorite_checkbox -> gtk::CheckButton {
-					set_active: model.filter.show_favorite,
-					connect_toggled[sender] => move |_| {
-						sender.input(MainViewInput::UpdateNamePreferenceFilter);
-					}
-				},
-				gtk::Image {
-					set_from_icon_name: Some("emblem-favorite-symbolic"),
-				},
-
-				#[local]
-				show_nogo_checkbox -> gtk::CheckButton {
-					set_active: model.filter.show_nogo,
-					connect_toggled[sender] => move |_| {
-						sender.input(MainViewInput::UpdateNamePreferenceFilter);
-					}
-				},
-				gtk::Image {
-					set_from_icon_name: Some("action-unavailable-symbolic"),
-				},
-
-				#[local]
-				show_neutral_checkbox -> gtk::CheckButton {
-					set_label: Some("Neutral"),
-					set_active: model.filter.show_neutral,
-					connect_toggled[sender] => move |_| {
-						sender.input(MainViewInput::UpdateNamePreferenceFilter);
-					}
-				},
-			},
+			#[local]
+			name_preference_view -> gtk::Box {},
 
 			#[local]
 			name_list -> gtk::Box {},
@@ -115,15 +83,23 @@ impl SimpleComponent for MainView {
 			.forward(sender.input_sender(), MainViewInput::GenderSelected);
 		let gender_dropdown = gender_dropdown_controller.widget().clone();
 
-		let show_favorite_checkbox = gtk::CheckButton::new();
-		let show_nogo_checkbox = gtk::CheckButton::new();
-		let show_neutral_checkbox = gtk::CheckButton::new();
+		let filter = NameListViewFilter::default();
+		let name_preference_controller = PreferenceFilterComponent::builder()
+			.launch(PreferenceFilter {
+				show_favorite: filter.show_favorite,
+				show_nogo: filter.show_nogo,
+				show_neutral: filter.show_neutral,
+			})
+			.forward(sender.input_sender(), |message| match message {
+				PreferenceFilterOutput::UpdateFilter(filter) => MainViewInput::UpdateNamePreferenceFilter(filter),
+			});
+		let name_preference_view = name_preference_controller.widget().clone();
+
 		let model = Self {
 			name_list_controller,
-			show_favorite_checkbox: show_favorite_checkbox.clone(),
-			show_nogo_checkbox: show_nogo_checkbox.clone(),
-			show_neutral_checkbox: show_neutral_checkbox.clone(),
-			filter: Default::default(),
+			_gender_filter_controller: gender_dropdown_controller,
+			_name_preference_controller: name_preference_controller,
+			filter,
 		};
 
 		let widgets = view_output!();
@@ -148,10 +124,14 @@ impl SimpleComponent for MainView {
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(MainViewOutput::NamePreferenceUpdated(name_with_preferences));
 			}
-			UpdateNamePreferenceFilter => {
-				self.filter.show_favorite = self.show_favorite_checkbox.is_active();
-				self.filter.show_nogo = self.show_nogo_checkbox.is_active();
-				self.filter.show_neutral = self.show_neutral_checkbox.is_active();
+			UpdateNamePreferenceFilter(PreferenceFilter {
+				show_favorite,
+				show_nogo,
+				show_neutral,
+			}) => {
+				self.filter.show_favorite = show_favorite;
+				self.filter.show_nogo = show_nogo;
+				self.filter.show_neutral = show_neutral;
 
 				let _ = self
 					.name_list_controller
