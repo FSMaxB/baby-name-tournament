@@ -15,7 +15,9 @@ mod similarities;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
-	dotenvy::dotenv()?;
+	if let Err(error) = dotenvy::dotenv() {
+		println!("Error loading .env file: {error}");
+	}
 
 	let cli = Cli::parse();
 
