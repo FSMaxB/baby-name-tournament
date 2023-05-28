@@ -45,6 +45,18 @@ impl SimpleComponent for NameListRow {
 			#[local]
 			father_preference_widget -> gtk::Box {},
 
+			gtk::Box {
+				gtk::Button {
+					set_icon_name: "edit-undo-symbolic",
+					set_vexpand: false,
+					set_hexpand: false,
+
+					connect_clicked[sender] => move |_| {
+						sender.input(NameListRowInput::UpdateSharedPreference(None));
+					}
+				},
+			}
+
 		}
 	}
 
@@ -58,7 +70,7 @@ impl SimpleComponent for NameListRow {
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let shared_preference_controller = NamePreferenceView::builder()
-			.launch(("Shared", None))
+			.launch(("Shared Preference", None))
 			.forward(sender.input_sender(), NameListRowInput::UpdateSharedPreference);
 		let shared_preference_widget = shared_preference_controller.widget().clone();
 

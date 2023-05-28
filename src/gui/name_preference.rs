@@ -23,6 +23,7 @@ impl SimpleComponent for NamePreferenceView {
 			},
 			gtk::Box {
 				set_orientation: Orientation::Horizontal,
+				set_halign: Align::Center,
 
 				#[name(favorite_button)]
 				gtk::CheckButton {
