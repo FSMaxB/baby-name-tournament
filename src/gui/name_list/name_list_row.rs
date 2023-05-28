@@ -8,8 +8,9 @@ use relm4::{
 
 pub struct NameListRow {
 	name: Name,
-	mother_preference: NamePreference,
-	father_preference: NamePreference,
+	mother_preference: Option<NamePreference>,
+	father_preference: Option<NamePreference>,
+	shared_preference_controller: Controller<NamePreferenceView>,
 	mother_preference_controller: Controller<NamePreferenceView>,
 	father_preference_controller: Controller<NamePreferenceView>,
 }
@@ -37,6 +38,9 @@ impl SimpleComponent for NameListRow {
 			},
 
 			#[local]
+			shared_preference_widget -> gtk::Box {},
+
+			#[local]
 			mother_preference_widget -> gtk::Box {},
 			#[local]
 			father_preference_widget -> gtk::Box {},
@@ -53,13 +57,18 @@ impl SimpleComponent for NameListRow {
 		_root: &Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let shared_preference_controller = NamePreferenceView::builder()
+			.launch(("Shared", None))
+			.forward(sender.input_sender(), NameListRowInput::UpdateSharedPreference);
+		let shared_preference_widget = shared_preference_controller.widget().clone();
+
 		let mother_preference_controller = NamePreferenceView::builder()
-			.launch(("Mother", NamePreference::Neutral))
+			.launch(("Mother", mother_preference))
 			.forward(sender.input_sender(), NameListRowInput::UpdateMotherPreference);
 		let mother_preference_widget = mother_preference_controller.widget().clone();
 
 		let father_preference_controller = NamePreferenceView::builder()
-			.launch(("Father", NamePreference::Neutral))
+			.launch(("Father", father_preference))
 			.forward(sender.input_sender(), NameListRowInput::UpdateFatherPreference);
 		let father_preference_widget = father_preference_controller.widget().clone();
 
@@ -67,6 +76,7 @@ impl SimpleComponent for NameListRow {
 			name,
 			mother_preference,
 			father_preference,
+			shared_preference_controller,
 			mother_preference_controller,
 			father_preference_controller,
 		};
@@ -97,6 +107,20 @@ impl SimpleComponent for NameListRow {
 					.sender()
 					.send(NamePreferenceInput::SetPreference(father_preference));
 			}
+			UpdateSharedPreference(preference) => {
+				self.mother_preference = preference;
+				self.father_preference = preference;
+				let _ = self
+					.mother_preference_controller
+					.sender()
+					.send(NamePreferenceInput::SetPreference(preference));
+				let _ = self
+					.father_preference_controller
+					.sender()
+					.send(NamePreferenceInput::SetPreference(preference));
+
+				self.send_preference_output(sender.output_sender());
+			}
 			UpdateMotherPreference(preference) => {
 				self.mother_preference = preference;
 				let _ = self
@@ -114,6 +138,16 @@ impl SimpleComponent for NameListRow {
 				self.send_preference_output(sender.output_sender());
 			}
 		}
+
+		let shared_preference = if self.mother_preference == self.father_preference {
+			self.mother_preference
+		} else {
+			None
+		};
+		let _ = self
+			.shared_preference_controller
+			.sender()
+			.send(NamePreferenceInput::SetPreference(shared_preference));
 	}
 }
 
@@ -131,15 +165,16 @@ impl NameListRow {
 #[derive(Debug)]
 pub struct NameListRowInit {
 	pub name: Name,
-	pub mother_preference: NamePreference,
-	pub father_preference: NamePreference,
+	pub mother_preference: Option<NamePreference>,
+	pub father_preference: Option<NamePreference>,
 }
 
 #[derive(Debug)]
 pub enum NameListRowInput {
 	SetName(NameWithPreferences),
-	UpdateMotherPreference(NamePreference),
-	UpdateFatherPreference(NamePreference),
+	UpdateSharedPreference(Option<NamePreference>),
+	UpdateMotherPreference(Option<NamePreference>),
+	UpdateFatherPreference(Option<NamePreference>),
 }
 
 #[derive(Debug)]

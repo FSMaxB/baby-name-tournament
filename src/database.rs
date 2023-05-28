@@ -231,10 +231,29 @@ pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Re
 
 pub async fn upsert_name_preference(
 	name: &str,
-	mother_preference: NamePreference,
-	father_preference: NamePreference,
+	mother_preference: Option<NamePreference>,
+	father_preference: Option<NamePreference>,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<()> {
+	if mother_preference.is_none() && father_preference.is_none() {
+		// FIXME: How to properly deal with this
+		sqlx::query!(
+			r#"
+			DELETE
+			FROM parent_name_preferences
+			WHERE
+				name = $1
+			"#,
+			name,
+		)
+		.execute(database_pool)
+		.await?;
+
+		return Ok(());
+	}
+
+	let mother_preference = mother_preference.unwrap_or(NamePreference::Neutral);
+	let father_preference = father_preference.unwrap_or(NamePreference::Neutral);
 	sqlx::query!(
 		r#"
 		INSERT INTO parent_name_preferences (

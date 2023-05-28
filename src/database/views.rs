@@ -6,8 +6,8 @@ use sqlx::SqlitePool;
 pub struct NameWithPreferences {
 	pub name: String,
 	pub gender: Gender,
-	pub mother_preference: NamePreference,
-	pub father_preference: NamePreference,
+	pub mother_preference: Option<NamePreference>,
+	pub father_preference: Option<NamePreference>,
 }
 
 pub async fn read_all_similar(
@@ -22,8 +22,8 @@ pub async fn read_all_similar(
 		SELECT
 			names.name as "name!",
 			gender as "gender!: Gender",
-			coalesce(parent_name_preferences.mother_preference, 'neutral') as "mother_preference!: NamePreference",
-			coalesce(parent_name_preferences.father_preference, 'neutral') as "father_preference!: NamePreference"
+			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
+			parent_name_preferences.father_preference as "father_preference: NamePreference"
 		FROM similarities
 		INNER JOIN names ON
 			b = names.name
@@ -63,8 +63,8 @@ pub async fn read_all_names(
 		SELECT
 			names.name as "name!",
 			gender as "gender!: Gender",
-			coalesce(parent_name_preferences.mother_preference, 'neutral') as "mother_preference!: NamePreference",
-			coalesce(parent_name_preferences.father_preference, 'neutral') as "father_preference!: NamePreference"
+			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
+			parent_name_preferences.father_preference as "father_preference: NamePreference"
 		FROM names
 		LEFT JOIN parent_name_preferences
 			ON names.name = parent_name_preferences.name

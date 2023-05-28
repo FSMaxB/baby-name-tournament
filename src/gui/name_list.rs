@@ -1,7 +1,7 @@
 use crate::csv_parser::Gender;
 use crate::database;
 use crate::database::views::NameWithPreferences;
-use crate::database::{Name, NamePreference};
+use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
 use crate::gui::name_list::name_list_row::{NameListRow, NameListRowInit, NameListRowInput, NameListRowOutput};
@@ -68,8 +68,8 @@ where
 							name: "<none>".to_owned(),
 							gender: Gender::Both,
 						},
-						mother_preference: NamePreference::Neutral,
-						father_preference: NamePreference::Neutral,
+						mother_preference: None,
+						father_preference: None,
 					})
 					.forward(sender.input_sender(), |output| match output {
 						NameListRowOutput::NamePreferenceSet(name_with_preferences) => {

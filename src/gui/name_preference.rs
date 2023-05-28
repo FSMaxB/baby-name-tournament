@@ -4,14 +4,14 @@ use gtk::{Align, Orientation};
 use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 pub struct NamePreferenceView {
-	preference: NamePreference,
+	preference: Option<NamePreference>,
 }
 
 #[relm4::component(pub)]
 impl SimpleComponent for NamePreferenceView {
 	type Input = NamePreferenceInput;
-	type Output = NamePreference;
-	type Init = (&'static str, NamePreference);
+	type Output = Option<NamePreference>;
+	type Init = (&'static str, Option<NamePreference>);
 
 	view! {
 		gtk::Box {
@@ -27,7 +27,9 @@ impl SimpleComponent for NamePreferenceView {
 				#[name(favorite_button)]
 				gtk::CheckButton {
 					#[watch]
-					set_active: model.preference == NamePreference::Favorite,
+					set_active: model.preference == Some(NamePreference::Favorite),
+					#[watch]
+					set_inconsistent: model.preference.is_none(),
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
 							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::Favorite));
@@ -41,7 +43,9 @@ impl SimpleComponent for NamePreferenceView {
 				gtk::CheckButton {
 					set_group: Some(&favorite_button),
 					#[watch]
-					set_active: model.preference == NamePreference::NoGo,
+					set_active: model.preference == Some(NamePreference::NoGo),
+					#[watch]
+					set_inconsistent: model.preference.is_none(),
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
 							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::NoGo));
@@ -55,7 +59,9 @@ impl SimpleComponent for NamePreferenceView {
 				gtk::CheckButton {
 					set_group: Some(&favorite_button),
 					#[watch]
-					set_active: model.preference == NamePreference::Neutral,
+					set_active: model.preference == Some(NamePreference::Neutral),
+					#[watch]
+					set_inconsistent: model.preference.is_none(),
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
 							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::Neutral));
@@ -85,12 +91,12 @@ impl SimpleComponent for NamePreferenceView {
 				self.preference = preference;
 			}
 			PreferenceToggled(preference) => {
-				if preference == self.preference {
+				if Some(preference) == self.preference {
 					return;
 				}
 
-				self.preference = preference;
-				let _ = sender.output(preference);
+				self.preference = Some(preference);
+				let _ = sender.output(Some(preference));
 			}
 		}
 	}
@@ -98,6 +104,6 @@ impl SimpleComponent for NamePreferenceView {
 
 #[derive(Debug)]
 pub enum NamePreferenceInput {
-	SetPreference(NamePreference),
+	SetPreference(Option<NamePreference>),
 	PreferenceToggled(NamePreference),
 }
