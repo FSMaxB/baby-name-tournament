@@ -53,7 +53,7 @@ pub async fn read_all_names(
 	gender: Gender,
 	include_favorite: bool,
 	include_nogo: bool,
-	include_neutral: bool,
+	include_undecided: bool,
 	name_contains: Option<&str>,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<Vec<NameWithPreferences>> {
@@ -77,7 +77,7 @@ pub async fn read_all_names(
 			AND (
 				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
 				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
-				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
+				OR ($4 AND (parent_name_preferences.name IS NULL OR parent_name_preferences.mother_preference IS NULL or parent_name_preferences.father_preference IS NULL))
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
 		ORDER BY names.name ASC
@@ -85,7 +85,7 @@ pub async fn read_all_names(
 		gender,
 		include_favorite,
 		include_nogo,
-		include_neutral,
+		include_undecided,
 		name_contains,
 	)
 	.fetch_all(database_pool)

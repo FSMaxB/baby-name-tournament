@@ -4,15 +4,14 @@ use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
 pub struct PreferenceFilterComponent {
 	show_favorite_checkbox: gtk::CheckButton,
 	show_nogo_checkbox: gtk::CheckButton,
-	show_neutral_checkbox: gtk::CheckButton,
-	// TODO: show undecided?
+	show_undecided_checkbox: gtk::CheckButton,
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct PreferenceFilter {
 	pub show_favorite: bool,
 	pub show_nogo: bool,
-	pub show_neutral: bool,
+	pub show_undecided: bool,
 }
 
 #[derive(Debug)]
@@ -60,9 +59,9 @@ impl SimpleComponent for PreferenceFilterComponent {
 			},
 
 			#[local]
-			show_neutral_checkbox -> gtk::CheckButton {
-				set_label: Some("Neutral"),
-				set_active: preference_filter.show_neutral,
+			show_undecided_checkbox -> gtk::CheckButton {
+				set_label: Some("-"),
+				set_active: preference_filter.show_undecided,
 				connect_toggled[sender] => move |_| {
 					sender.input(PreferenceFilterInput::UpdateFilter);
 				}
@@ -73,11 +72,11 @@ impl SimpleComponent for PreferenceFilterComponent {
 	fn init(preference_filter: Self::Init, _root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let show_favorite_checkbox = gtk::CheckButton::new();
 		let show_nogo_checkbox = gtk::CheckButton::new();
-		let show_neutral_checkbox = gtk::CheckButton::new();
+		let show_undecided_checkbox = gtk::CheckButton::new();
 		let model = Self {
 			show_favorite_checkbox: show_favorite_checkbox.clone(),
 			show_nogo_checkbox: show_nogo_checkbox.clone(),
-			show_neutral_checkbox: show_neutral_checkbox.clone(),
+			show_undecided_checkbox: show_undecided_checkbox.clone(),
 		};
 
 		let widgets = view_output!();
@@ -92,7 +91,7 @@ impl SimpleComponent for PreferenceFilterComponent {
 				let _ = sender.output(PreferenceFilterOutput::UpdateFilter(PreferenceFilter {
 					show_favorite: self.show_favorite_checkbox.is_active(),
 					show_nogo: self.show_nogo_checkbox.is_active(),
-					show_neutral: self.show_neutral_checkbox.is_active(),
+					show_undecided: self.show_undecided_checkbox.is_active(),
 				}));
 			}
 		}

@@ -171,7 +171,7 @@ pub struct NameListViewFilter {
 	pub gender: Gender,
 	pub show_favorite: bool,
 	pub show_nogo: bool,
-	pub show_neutral: bool,
+	pub show_undecided: bool,
 	pub name_contains: Option<String>,
 }
 
@@ -181,7 +181,7 @@ impl Default for NameListViewFilter {
 			gender: Gender::Both,
 			show_favorite: true,
 			show_nogo: true,
-			show_neutral: true,
+			show_undecided: true,
 			name_contains: None,
 		}
 	}
@@ -198,7 +198,7 @@ impl DatabaseView for NameListView {
 			gender,
 			show_favorite,
 			show_nogo,
-			show_neutral,
+			show_undecided,
 			name_contains,
 		}: &Self::Filter,
 	) -> anyhow::Result<Vec<Self::Model>> {
@@ -206,7 +206,7 @@ impl DatabaseView for NameListView {
 			*gender,
 			*show_favorite,
 			*show_nogo,
-			*show_neutral,
+			*show_undecided,
 			name_contains.as_deref(),
 			backend.database_pool(),
 		))?)

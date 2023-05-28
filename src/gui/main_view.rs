@@ -88,7 +88,7 @@ impl SimpleComponent for MainView {
 			.launch(PreferenceFilter {
 				show_favorite: filter.show_favorite,
 				show_nogo: filter.show_nogo,
-				show_neutral: filter.show_neutral,
+				show_undecided: filter.show_undecided,
 			})
 			.forward(sender.input_sender(), |message| match message {
 				PreferenceFilterOutput::UpdateFilter(filter) => MainViewInput::UpdateNamePreferenceFilter(filter),
@@ -127,11 +127,11 @@ impl SimpleComponent for MainView {
 			UpdateNamePreferenceFilter(PreferenceFilter {
 				show_favorite,
 				show_nogo,
-				show_neutral,
+				show_undecided,
 			}) => {
 				self.filter.show_favorite = show_favorite;
 				self.filter.show_nogo = show_nogo;
-				self.filter.show_neutral = show_neutral;
+				self.filter.show_undecided = show_undecided;
 
 				let _ = self
 					.name_list_controller

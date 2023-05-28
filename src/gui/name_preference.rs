@@ -55,19 +55,6 @@ impl SimpleComponent for NamePreferenceView {
 				gtk::Image {
 					set_from_icon_name: Some("action-unavailable-symbolic"),
 				},
-				#[name(neutral_button)]
-				gtk::CheckButton {
-					set_group: Some(&favorite_button),
-					#[watch]
-					set_active: model.preference == Some(NamePreference::Neutral),
-					#[watch]
-					set_inconsistent: model.preference.is_none(),
-					connect_toggled[sender] => move |button| {
-						if button.is_active() {
-							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::Neutral));
-						}
-					}
-				}
 			},
 		}
 	}
