@@ -135,12 +135,10 @@ where
 				.update_filter(filter)
 				.expect("Failed to update list manager"),
 			NameSelected(name) => {
-				let _ = sender.output_sender().send(NameListOutput::NameSelected(name));
+				let _ = sender.output(NameListOutput::NameSelected(name));
 			}
 			NamePreferenceUpdated(name_with_preferences) => {
-				let _ = sender
-					.output_sender()
-					.send(NameListOutput::NamePreferenceUpdated(name_with_preferences));
+				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
 			Refresh => {
 				self.list_manager

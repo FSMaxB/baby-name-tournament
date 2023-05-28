@@ -30,7 +30,7 @@ impl SimpleComponent for NamePreferenceView {
 					set_active: model.preference == NamePreference::Favorite,
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
-							let _ = sender.input_sender().send(NamePreferenceInput::PreferenceToggled(NamePreference::Favorite));
+							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::Favorite));
 						}
 					}
 				},
@@ -44,7 +44,7 @@ impl SimpleComponent for NamePreferenceView {
 					set_active: model.preference == NamePreference::NoGo,
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
-							let _ = sender.input_sender().send(NamePreferenceInput::PreferenceToggled(NamePreference::NoGo));
+							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::NoGo));
 						}
 					}
 				},
@@ -58,7 +58,7 @@ impl SimpleComponent for NamePreferenceView {
 					set_active: model.preference == NamePreference::Neutral,
 					connect_toggled[sender] => move |button| {
 						if button.is_active() {
-							let _ = sender.input_sender().send(NamePreferenceInput::PreferenceToggled(NamePreference::Neutral));
+							sender.input(NamePreferenceInput::PreferenceToggled(NamePreference::Neutral));
 						}
 					}
 				}
@@ -90,7 +90,7 @@ impl SimpleComponent for NamePreferenceView {
 				}
 
 				self.preference = preference;
-				let _ = sender.output_sender().send(preference);
+				let _ = sender.output(preference);
 			}
 		}
 	}

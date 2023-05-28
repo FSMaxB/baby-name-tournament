@@ -50,7 +50,7 @@ impl SimpleComponent for NameDetailView {
 					set_value: model.filter.threshold,
 					set_adjustment: &Adjustment::new(3.0, 0.0, 20.0, 1.0, 1.0, 1.0),
 					connect_value_changed[sender] => move |button| {
-						let _ = sender.input_sender().send(NameDetailViewInput::UpdateThreshold(button.value()));
+						sender.input(NameDetailViewInput::UpdateThreshold(button.value()));
 					},
 				},
 			},
@@ -104,9 +104,7 @@ impl SimpleComponent for NameDetailView {
 				self.filter.threshold = threshold;
 			}
 			UpdateNamePreferences(name_with_preferences) => {
-				let _ = sender
-					.output_sender()
-					.send(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
+				let _ = sender.output(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
 				return; // don't update the filter
 			}
 		};

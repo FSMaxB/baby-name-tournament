@@ -94,7 +94,7 @@ impl SimpleComponent for Application {
 							gtk::SearchEntry {
 								set_placeholder_text: Some("Search ..."),
 								connect_search_changed[sender] => move |search_field| {
-									let _ = sender.input_sender().send(ApplicationMessage::UpdateSearchTerm(search_field.text().as_str().to_owned()));
+									sender.input(ApplicationMessage::UpdateSearchTerm(search_field.text().as_str().to_owned()));
 								}
 							},
 						},
@@ -111,7 +111,7 @@ impl SimpleComponent for Application {
 							show_favorite_checkbox -> gtk::CheckButton {
 								set_active: model.filter.show_favorite,
 								connect_toggled[sender] => move |_| {
-									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
 								}
 							},
 							gtk::Image {
@@ -122,7 +122,7 @@ impl SimpleComponent for Application {
 							show_nogo_checkbox -> gtk::CheckButton {
 								set_active: model.filter.show_nogo,
 								connect_toggled[sender] => move |_| {
-									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
 								}
 							},
 							gtk::Image {
@@ -134,7 +134,7 @@ impl SimpleComponent for Application {
 								set_label: Some("Neutral"),
 								set_active: model.filter.show_neutral,
 								connect_toggled[sender] => move |_| {
-									let _ = sender.input_sender().send(ApplicationMessage::UpdateNamePreferenceFilter);
+									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
 								}
 							},
 						},
