@@ -184,4 +184,21 @@ impl DatabaseView for SimilarNameListView {
 			.try_into()
 			.expect("Number out of range")
 	}
+
+	fn read_all(
+		&self,
+		backend: &Backend,
+		SimilarNameListViewFilter {
+			name,
+			gender,
+			threshold,
+		}: &Self::Filter,
+	) -> anyhow::Result<Vec<Self::Model>> {
+		Ok(backend.block_on_future(database::views::read_all_similar(
+			name,
+			*gender,
+			*threshold,
+			backend.database_pool(),
+		))?)
+	}
 }
