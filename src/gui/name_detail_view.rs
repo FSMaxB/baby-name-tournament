@@ -107,6 +107,9 @@ impl SimpleComponent for NameDetailView {
 				let _ = sender.output(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
 				return; // don't update the filter
 			}
+			Refresh => {
+				// just trigger the update below
+			}
 		};
 
 		let _ = self
@@ -122,6 +125,7 @@ pub enum NameDetailViewInput {
 	SetGender(Gender),
 	UpdateNamePreferences(NameWithPreferences),
 	UpdateThreshold(f64),
+	Refresh,
 }
 
 #[derive(Debug)]

@@ -1,9 +1,7 @@
 use crate::csv_parser::Gender;
-use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::name_detail_view::{NameDetailViewInput, NameDetailViewOutput};
-use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
 use crate::gui::runtime_thread::RuntimeThread;
-use gtk::{Align, Orientation, StackTransitionType};
+use gtk::{Orientation, StackTransitionType};
 use libadwaita::prelude::*;
 use libadwaita::HeaderBar;
 use relm4::{
@@ -18,6 +16,7 @@ mod backend;
 mod database_list;
 mod force_unwrapped_field;
 mod gender_dropdown;
+mod main_view;
 mod name_detail_view;
 mod name_list;
 mod name_preference;
@@ -26,6 +25,7 @@ mod runtime_thread;
 use crate::database;
 use crate::database::views::NameWithPreferences;
 use crate::database::Name;
+use crate::gui::main_view::{MainView, MainViewInput, MainViewOutput};
 use crate::gui::name_detail_view::NameDetailView;
 use backend::Backend;
 
@@ -39,17 +39,11 @@ pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> 
 }
 
 struct Application {
-	name_list_controller: Controller<NameList<NameListView>>,
-	_gender_dropdown_controller: Controller<GenderDropdown>,
+	main_view_controller: Controller<MainView>,
 	name_detail_view_controller: Controller<NameDetailView>,
 	stack: gtk::Stack,
 	back_button: gtk::Button,
-	// TODO: Per parent filters? (anything else is kind of confusing)
-	show_favorite_checkbox: gtk::CheckButton,
-	show_nogo_checkbox: gtk::CheckButton,
-	show_neutral_checkbox: gtk::CheckButton,
 	backend: Backend,
-	filter: NameListViewFilter,
 }
 
 #[derive(Debug)]
@@ -57,8 +51,6 @@ enum ApplicationMessage {
 	GenderSelected(Gender),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
-	UpdateNamePreferenceFilter,
-	UpdateSearchTerm(String),
 	BackToList,
 }
 
@@ -84,64 +76,8 @@ impl SimpleComponent for Application {
 				stack -> gtk::Stack {
 					set_transition_type: StackTransitionType::SlideLeftRight,
 
-					gtk::Box {
-						set_orientation: Orientation::Vertical,
-
-						gtk::Box {
-							set_orientation: Orientation::Horizontal,
-							set_homogeneous: true,
-
-							gtk::SearchEntry {
-								set_placeholder_text: Some("Search ..."),
-								connect_search_changed[sender] => move |search_field| {
-									sender.input(ApplicationMessage::UpdateSearchTerm(search_field.text().as_str().to_owned()));
-								}
-							},
-						},
-
-						#[local]
-						gender_dropdown -> gtk::DropDown {},
-
-						gtk::Box {
-							set_orientation: Orientation::Horizontal,
-							set_halign: Align::Center,
-							set_spacing: 12,
-
-							#[local]
-							show_favorite_checkbox -> gtk::CheckButton {
-								set_active: model.filter.show_favorite,
-								connect_toggled[sender] => move |_| {
-									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
-								}
-							},
-							gtk::Image {
-								set_from_icon_name: Some("emblem-favorite-symbolic"),
-							},
-
-							#[local]
-							show_nogo_checkbox -> gtk::CheckButton {
-								set_active: model.filter.show_nogo,
-								connect_toggled[sender] => move |_| {
-									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
-								}
-							},
-							gtk::Image {
-								set_from_icon_name: Some("action-unavailable-symbolic"),
-							},
-
-							#[local]
-							show_neutral_checkbox -> gtk::CheckButton {
-								set_label: Some("Neutral"),
-								set_active: model.filter.show_neutral,
-								connect_toggled[sender] => move |_| {
-									sender.input(ApplicationMessage::UpdateNamePreferenceFilter);
-								}
-							},
-						},
-
-						#[local]
-						name_list -> gtk::Box {},
-					},
+					#[local]
+					main_view -> gtk::Box {},
 
 					#[local]
 					name_detail_view -> gtk::Box {},
@@ -151,21 +87,17 @@ impl SimpleComponent for Application {
 	}
 
 	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
-		// TODO: Pull main view out
-		let name_list_controller = NameList::builder()
-			.launch((NameListViewFilter::default(), backend.clone()))
-			.forward(sender.input_sender(), |output| match output {
-				NameListOutput::NameSelected(name) => ApplicationMessage::NameSelected(name),
-				NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
-					ApplicationMessage::NamePreferenceUpdated(name_with_preferences)
-				}
-			});
-		let name_list = name_list_controller.widget().clone();
-
-		let gender_dropdown_controller = GenderDropdown::builder()
-			.launch(())
-			.forward(sender.input_sender(), ApplicationMessage::GenderSelected);
-		let gender_dropdown = gender_dropdown_controller.widget().clone();
+		let main_view_controller =
+			MainView::builder()
+				.launch(backend.clone())
+				.forward(sender.input_sender(), |message| match message {
+					MainViewOutput::NamePreferenceUpdated(name_with_preference) => {
+						ApplicationMessage::NamePreferenceUpdated(name_with_preference)
+					}
+					MainViewOutput::NameSelected(name) => ApplicationMessage::NameSelected(name),
+					MainViewOutput::GenderSelected(gender) => ApplicationMessage::GenderSelected(gender),
+				});
+		let main_view = main_view_controller.widget().clone();
 
 		let name_detail_view_controller = NameDetailView::builder()
 			.launch((
@@ -197,20 +129,12 @@ impl SimpleComponent for Application {
 			}
 		});
 
-		let show_favorite_checkbox = gtk::CheckButton::new();
-		let show_nogo_checkbox = gtk::CheckButton::new();
-		let show_neutral_checkbox = gtk::CheckButton::new();
 		let model = Self {
-			name_list_controller,
-			_gender_dropdown_controller: gender_dropdown_controller,
+			main_view_controller,
 			name_detail_view_controller,
 			stack: stack.clone(),
 			back_button: back_button.clone(),
-			show_favorite_checkbox: show_favorite_checkbox.clone(),
-			show_nogo_checkbox: show_nogo_checkbox.clone(),
-			show_neutral_checkbox: show_neutral_checkbox.clone(),
 			backend,
-			filter: Default::default(),
 		};
 
 		let widgets = view_output!();
@@ -222,11 +146,6 @@ impl SimpleComponent for Application {
 		use ApplicationMessage::*;
 		match message {
 			GenderSelected(gender) => {
-				self.filter.gender = gender;
-				let _ = self
-					.name_list_controller
-					.sender()
-					.send(NameListInput::UpdateFilter(self.filter.clone()));
 				let _ = self
 					.name_detail_view_controller
 					.sender()
@@ -255,34 +174,16 @@ impl SimpleComponent for Application {
 						self.backend.database_pool(),
 					))
 					.expect("Failed to update name preference");
-			}
-			UpdateNamePreferenceFilter => {
-				self.filter.show_favorite = self.show_favorite_checkbox.is_active();
-				self.filter.show_nogo = self.show_nogo_checkbox.is_active();
-				self.filter.show_neutral = self.show_neutral_checkbox.is_active();
-
 				let _ = self
-					.name_list_controller
+					.name_detail_view_controller
 					.sender()
-					.send(NameListInput::UpdateFilter(self.filter.clone()));
-			}
-			UpdateSearchTerm(search_term) => {
-				self.filter.name_contains = if search_term.trim().is_empty() {
-					None
-				} else {
-					Some(search_term)
-				};
-
-				let _ = self
-					.name_list_controller
-					.sender()
-					.send(NameListInput::UpdateFilter(self.filter.clone()));
+					.send(NameDetailViewInput::Refresh);
 			}
 			BackToList => {
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(0, true);
 				self.back_button.set_visible(false);
-				let _ = self.name_list_controller.sender().send(NameListInput::Refresh);
+				let _ = self.main_view_controller.sender().send(MainViewInput::Refresh);
 			}
 		}
 	}
