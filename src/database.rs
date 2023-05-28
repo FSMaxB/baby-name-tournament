@@ -1,7 +1,7 @@
 use crate::csv_parser::{Gender, NameRecord};
 use crate::similarities::Similarity;
 use futures_util::{stream, Stream, TryStreamExt};
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+use sqlx::sqlite::{SqliteAutoVacuum, SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::SqlitePool;
 use std::path::Path;
 
@@ -18,6 +18,8 @@ fn connect_options(path: &Path) -> SqliteConnectOptions {
 		.filename(path)
 		.journal_mode(SqliteJournalMode::Wal)
 		.synchronous(SqliteSynchronous::Normal)
+		.auto_vacuum(SqliteAutoVacuum::Incremental)
+		.pragma("mmap_size", (32usize * 1024 * 1024 * 1024).to_string())
 		.create_if_missing(true)
 }
 

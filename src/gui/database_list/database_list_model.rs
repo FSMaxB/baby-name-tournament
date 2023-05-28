@@ -1,4 +1,3 @@
-use crate::gui::backend::Backend;
 use crate::gui::database_list::database_list_manager::DatabaseListManager;
 use crate::gui::database_list::DatabaseView;
 use glib::Object;
@@ -20,15 +19,15 @@ impl Default for DatabaseListModel {
 }
 
 impl DatabaseListModel {
-	pub fn new(backend: Backend, database_list_manager: DatabaseListManager<impl DatabaseView>) -> Self {
+	pub fn new(database_list_manager: DatabaseListManager<impl DatabaseView>) -> Self {
 		let this = Object::new::<Self>();
 
-		this.initialize(backend, database_list_manager);
+		this.initialize(database_list_manager);
 
 		this
 	}
 
-	pub fn initialize(&self, backend: Backend, database_list_manager: DatabaseListManager<impl DatabaseView>) {
-		self.imp().initialize(backend, database_list_manager)
+	pub fn initialize(&self, database_list_manager: DatabaseListManager<impl DatabaseView>) {
+		self.imp().initialize(database_list_manager)
 	}
 }

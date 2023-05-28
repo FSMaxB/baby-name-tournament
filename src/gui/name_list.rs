@@ -20,7 +20,6 @@ mod name_list_row;
 
 pub struct NameList<VIEW: DatabaseView> {
 	list_manager: DatabaseListManager<VIEW>,
-	backend: Backend,
 }
 
 #[relm4::component(pub)]
@@ -106,32 +105,35 @@ where
 			controllers.borrow_mut().remove(&list_item.as_ptr());
 		});
 
-		let list_manager = DatabaseListManager::new(initial_filter, VIEW::default());
-		let list_model = DatabaseListModel::new(backend.clone(), list_manager.clone());
+		let list_manager = DatabaseListManager::new(initial_filter, VIEW::default(), backend)
+			.expect("Failed to initialize name list manager");
+		let list_model = DatabaseListModel::new(list_manager.clone());
 		let selection_model = SingleSelection::new(Some(list_model));
 		widgets.name_list.set_factory(Some(&name_factory));
 		widgets.name_list.set_model(Some(&selection_model));
 
 		widgets.name_list.connect_activate({
 			let list_manager = list_manager.clone();
-			let backend = backend.clone();
 			let input_sender = sender.input_sender().clone();
 			move |_, position| {
-				let Ok(NameWithPreferences {name, gender, ..}) = list_manager.read_at_offset(&backend, position) else {
+				let Ok(NameWithPreferences {name, gender, ..}) = list_manager.read_at_offset(position) else {
 					return;
 				};
 				let _ = input_sender.send(NameListInput::NameSelected(Name { name, gender }));
 			}
 		});
 
-		let model = NameList { list_manager, backend };
+		let model = NameList { list_manager };
 		ComponentParts { model, widgets }
 	}
 
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		use NameListInput::*;
 		match message {
-			UpdateFilter(filter) => self.list_manager.update_filter(&self.backend, filter),
+			UpdateFilter(filter) => self
+				.list_manager
+				.update_filter(filter)
+				.expect("Failed to update list manager"),
 			NameSelected(name) => {
 				let _ = sender.output_sender().send(NameListOutput::NameSelected(name));
 			}
@@ -141,7 +143,9 @@ where
 					.send(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
 			Refresh => {
-				self.list_manager.notify_changed(&self.backend);
+				self.list_manager
+					.notify_changed()
+					.expect("Failed to update list manager");
 			}
 		}
 	}
@@ -189,29 +193,24 @@ impl DatabaseView for NameListView {
 	type Model = NameWithPreferences;
 	type Filter = NameListViewFilter;
 
-	fn read_at_offset(&self, backend: &Backend, filter: &Self::Filter, offset: u32) -> anyhow::Result<Self::Model> {
-		let model = backend.block_on_future(database::views::read_name_at_offset(
-			offset,
-			filter.gender,
-			filter.show_favorite,
-			filter.show_nogo,
-			filter.show_neutral,
-			filter.name_contains.as_deref(),
+	fn read_all(
+		&self,
+		backend: &Backend,
+		NameListViewFilter {
+			gender,
+			show_favorite,
+			show_nogo,
+			show_neutral,
+			name_contains,
+		}: &Self::Filter,
+	) -> anyhow::Result<Vec<Self::Model>> {
+		Ok(backend.block_on_future(database::views::read_all_names(
+			*gender,
+			*show_favorite,
+			*show_nogo,
+			*show_neutral,
+			name_contains.as_deref(),
 			backend.database_pool(),
-		))?;
-		Ok(model)
-	}
-
-	fn count(&self, backend: &Backend, filter: &Self::Filter) -> u32 {
-		backend
-			.block_on_future(database::views::count_names(
-				filter.gender,
-				filter.show_favorite,
-				filter.show_nogo,
-				filter.show_neutral,
-				filter.name_contains.as_deref(),
-				backend.database_pool(),
-			))
-			.expect("Failed to count names") as u32
+		))?)
 	}
 }

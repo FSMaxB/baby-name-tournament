@@ -9,6 +9,7 @@ async-channel = "1"
 async-trait = "0.1"
 clap = { version = "4", features = ["derive", "env"] }
 crossterm = {version = "0.26", features = ["event-stream"]}
+derive_more = "0.99"
 dotenvy = "0.15"
 csv = "1"
 futures-util = { version = "0.3", default-features = false }

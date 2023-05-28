@@ -10,13 +10,12 @@ pub struct NameWithPreferences {
 	pub father_preference: NamePreference,
 }
 
-pub async fn read_similar_at_offset(
+pub async fn read_all_similar(
 	name: &str,
 	gender: Gender,
 	threshold: f64,
-	offset: i64,
 	database_pool: &SqlitePool,
-) -> sqlx::Result<NameWithPreferences> {
+) -> sqlx::Result<Vec<NameWithPreferences>> {
 	sqlx::query_as!(
 		NameWithPreferences,
 		r#"
@@ -41,60 +40,23 @@ pub async fn read_similar_at_offset(
 				END
 			AND (levenshtein < $3)
 		ORDER BY b DESC
-		LIMIT -1
-		OFFSET $4
-		"#,
-		name,
-		gender,
-		threshold,
-		offset
-	)
-	.fetch_one(database_pool)
-	.await
-}
-
-pub async fn count_similar(
-	name: &str,
-	gender: Gender,
-	threshold: f64,
-	database_pool: &SqlitePool,
-) -> sqlx::Result<i32> {
-	sqlx::query_scalar!(
-		r#"
-		SELECT
-			count(*)
-		FROM similarities
-		INNER JOIN names ON
-			b = name
-		WHERE
-			(a = $1)
-			AND (a != b)
-			AND
-				CASE $2
-					WHEN 'both' THEN TRUE
-					WHEN 'female' THEN gender != 'male'
-					WHEN 'male' THEN gender != 'female'
-				END
-			AND (levenshtein < $3)
 		"#,
 		name,
 		gender,
 		threshold,
 	)
-	.fetch_optional(database_pool)
+	.fetch_all(database_pool)
 	.await
-	.map(Option::unwrap_or_default)
 }
 
-pub async fn read_name_at_offset(
-	offset: u32,
+pub async fn read_all_names(
 	gender: Gender,
 	include_favorite: bool,
 	include_nogo: bool,
 	include_neutral: bool,
 	name_contains: Option<&str>,
 	database_pool: &SqlitePool,
-) -> sqlx::Result<NameWithPreferences> {
+) -> sqlx::Result<Vec<NameWithPreferences>> {
 	sqlx::query_as!(
 		NameWithPreferences,
 		r#"
@@ -119,48 +81,6 @@ pub async fn read_name_at_offset(
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
 		ORDER BY names.name ASC
-		LIMIT 1
-		OFFSET $6
-		"#,
-		gender,
-		include_favorite,
-		include_nogo,
-		include_neutral,
-		name_contains,
-		offset,
-	)
-	.fetch_one(database_pool)
-	.await
-}
-
-pub async fn count_names(
-	gender: Gender,
-	include_favorite: bool,
-	include_nogo: bool,
-	include_neutral: bool,
-	name_contains: Option<&str>,
-	database_pool: &SqlitePool,
-) -> sqlx::Result<i32> {
-	sqlx::query_scalar!(
-		r#"
-		SELECT
-			count(*) as "count!"
-		FROM names
-		LEFT JOIN parent_name_preferences
-			ON names.name = parent_name_preferences.name
-		WHERE
-			CASE $1
-				WHEN 'both' THEN TRUE
-				WHEN 'female' THEN gender != 'male'
-				WHEN 'male' THEN gender != 'female'
-			END
-			AND (
-				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
-				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
-				OR ($4 AND (parent_name_preferences.name IS NULL OR mother_preference = 'neutral' OR father_preference = 'neutral'))
-			)
-			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
-
 		"#,
 		gender,
 		include_favorite,
@@ -168,6 +88,6 @@ pub async fn count_names(
 		include_neutral,
 		name_contains,
 	)
-	.fetch_one(database_pool)
+	.fetch_all(database_pool)
 	.await
 }

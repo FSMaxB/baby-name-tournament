@@ -1,4 +1,3 @@
-use crate::gui::backend::Backend;
 use crate::gui::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
 use crate::gui::database_list::DatabaseView;
 use crate::gui::force_unwrapped_field::ForceUnwrappedField;
@@ -10,7 +9,6 @@ use libadwaita::{gio, glib};
 
 #[derive(Default)]
 pub struct DatabaseListModel {
-	backend: Backend,
 	database_view: ForceUnwrappedField<Box<dyn DynamicListManager>>,
 }
 
@@ -29,21 +27,16 @@ impl ListModelImpl for DatabaseListModel {
 	}
 
 	fn n_items(&self) -> u32 {
-		self.database_view.count(&self.backend)
+		self.database_view.count()
 	}
 
 	fn item(&self, position: u32) -> Option<glib::Object> {
-		self.database_view
-			.read_at_offset(&self.backend, position)
-			.map(Cast::upcast)
-			.ok()
+		self.database_view.read_at_offset(position).map(Cast::upcast).ok()
 	}
 }
 
 impl DatabaseListModel {
-	pub fn initialize(&self, backend: Backend, database_list_manager: DatabaseListManager<impl DatabaseView>) {
-		self.backend.initialize(backend);
-
+	pub fn initialize(&self, database_list_manager: DatabaseListManager<impl DatabaseView>) {
 		let this = self.obj();
 		database_list_manager.register_items_changed_callback(Box::new(
 			clone!(@weak this => move |previous_count, count| {
