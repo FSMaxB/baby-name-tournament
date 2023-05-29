@@ -1,5 +1,5 @@
 use crate::gui::backend::Backend;
-use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::{DatabaseView, Model};
 use anyhow::Context;
 use glib::BoxedAnyObject;
 use libadwaita::glib;
@@ -42,6 +42,26 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 	pub fn update_filter(&self, filter: View::Filter) -> anyhow::Result<()> {
 		*self.filter.borrow_mut() = filter;
 		self.notify_changed()
+	}
+
+	pub fn notify_updated(&self, key: &<View::Model as Model>::Key) -> anyhow::Result<()> {
+		let updated_element = self.view.read_by_key(&self.backend, key)?;
+
+		let mut element_cache = self.element_cache.borrow_mut();
+		let Some(index) = element_cache.iter().position(|element| element.unique_key() == key) else {
+			// if it isn't in the list, it can't be updated
+			return Ok(())
+		};
+
+		element_cache[index] = updated_element;
+
+		if let Some(callback) = self.callback.get() {
+			let count = self.count();
+			// FIXME: Change callback so that only a single row can be updated in isolation
+			callback(count, count);
+		}
+
+		Ok(())
 	}
 
 	pub fn notify_changed(&self) -> anyhow::Result<()> {

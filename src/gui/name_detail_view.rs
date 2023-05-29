@@ -3,7 +3,7 @@ use crate::database;
 use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::backend::Backend;
-use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::{DatabaseView, Model};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput};
 use gtk::{Adjustment, Align, Label, Orientation};
 use libadwaita::prelude::*;
@@ -162,5 +162,17 @@ impl DatabaseView for SimilarNameListView {
 			*threshold,
 			backend.database_pool(),
 		))?)
+	}
+
+	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
+		Ok(backend.block_on_future(database::views::read_one(&key, backend.database_pool()))?)
+	}
+}
+
+impl Model for NameWithPreferences {
+	type Key = String;
+
+	fn unique_key(&self) -> &Self::Key {
+		&self.name
 	}
 }
