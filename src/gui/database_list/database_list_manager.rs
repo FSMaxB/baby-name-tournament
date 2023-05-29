@@ -4,8 +4,10 @@ use anyhow::Context;
 use glib::BoxedAnyObject;
 use libadwaita::glib;
 use once_cell::unsync;
+use relm4::gtk;
 use static_assertions::assert_obj_safe;
 use std::cell::RefCell;
+use std::iter;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -83,6 +85,24 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 			.get(offset as usize)
 			.cloned()
 			.with_context(|| format!("No element at offset {offset}"))
+	}
+
+	pub fn read_from_selection(&self, selection: &gtk::Bitset) -> anyhow::Result<Vec<View::Model>> {
+		let Some((iterator, first)) = gtk::BitsetIter::init_first(&selection) else {
+			return Ok(Vec::new());
+		};
+
+		let mut selected_items = Vec::with_capacity(selection.size() as usize);
+		let element_cache = self.element_cache.borrow();
+		for index in iter::once(first).chain(iterator) {
+			let item = element_cache
+				.get(index as usize)
+				.with_context(|| format!("Nonexistent item selected at position {index}"))?
+				.clone();
+			selected_items.push(item);
+		}
+
+		Ok(selected_items)
 	}
 
 	pub(super) fn count(&self) -> u32 {

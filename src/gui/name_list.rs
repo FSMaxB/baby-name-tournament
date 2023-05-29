@@ -5,7 +5,7 @@ use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView, Model};
 use crate::gui::name_list::name_list_row::{NameListRow, NameListRowInit, NameListRowInput, NameListRowOutput};
-use gtk::{prelude::*, PolicyType, SignalListItemFactory, SingleSelection};
+use gtk::{prelude::*, Orientation, PolicyType, SignalListItemFactory};
 use libadwaita::glib::BoxedAnyObject;
 use libadwaita::gtk;
 use libadwaita::gtk::ffi::GtkListItem;
@@ -20,6 +20,8 @@ mod name_list_row;
 
 pub struct NameList<VIEW: DatabaseView> {
 	list_manager: DatabaseListManager<VIEW>,
+	selected_names: Vec<NameWithPreferences>,
+	selected_names_row_controller: Controller<NameListRow>,
 }
 
 #[relm4::component(pub)]
@@ -34,16 +36,34 @@ where
 
 	view! {
 		gtk::Box {
-			set_homogeneous: true,
+			set_homogeneous: false,
+			set_orientation: Orientation::Vertical,
 
 			gtk::ScrolledWindow {
 				set_hscrollbar_policy: PolicyType::Never,
 				set_propagate_natural_height: true,
 
-				#[name(name_list)]
-				gtk::ListView {
+				#[local_ref]
+				name_list -> gtk::ListView {
 					set_show_separators: true,
 				}
+			},
+
+			gtk::Box {
+				#[watch]
+				set_visible: model.selected_names.len() > 1,
+				set_orientation: Orientation::Vertical,
+
+				gtk::Separator {},
+				gtk::Separator {},
+				gtk::Separator {},
+
+				gtk::Label {
+					#[watch]
+					set_label: &format!("Change {} selected names", model.selected_names.len()),
+				},
+				#[local]
+				selected_names_row -> gtk::Box {},
 			}
 		}
 	}
@@ -53,7 +73,21 @@ where
 		_root: &Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let widgets = view_output!();
+		let selected_names_row_controller = NameListRow::builder()
+			.launch(NameListRowInit {
+				name: Name {
+					name: "-".to_owned(),
+					gender: Gender::Both,
+				},
+				mother_preference: None,
+				father_preference: None,
+			})
+			.forward(sender.input_sender(), |message| match message {
+				NameListRowOutput::NamePreferenceSet(name_with_preferences) => {
+					NameListInput::MultiselectionPreferenceUpdated(name_with_preferences)
+				}
+			});
+		let selected_names_row = selected_names_row_controller.widget().clone();
 
 		let name_factory = SignalListItemFactory::new();
 
@@ -110,11 +144,32 @@ where
 		let list_manager = DatabaseListManager::new(initial_filter, VIEW::default(), backend)
 			.expect("Failed to initialize name list manager");
 		let list_model = DatabaseListModel::new(list_manager.clone());
-		let selection_model = SingleSelection::new(Some(list_model));
-		widgets.name_list.set_factory(Some(&name_factory));
-		widgets.name_list.set_model(Some(&selection_model));
+		let selection_model = gtk::MultiSelection::new(Some(list_model));
 
-		widgets.name_list.connect_activate({
+		selection_model.connect_selection_changed({
+			let input_sender = sender.input_sender().clone();
+			let list_manager = list_manager.clone();
+			move |model, _, _| {
+				let selected_names = list_manager
+					.read_from_selection(&model.selection())
+					.expect("Invalid name selected");
+				let _ = input_sender.send(NameListInput::SelectionChanged(selected_names));
+			}
+		});
+		selection_model.connect_items_changed({
+			let input_sender = sender.input_sender().clone();
+			let list_manager = list_manager.clone();
+			move |model, _, _, _| {
+				let selected_names = list_manager
+					.read_from_selection(&model.selection())
+					.expect("Invalid name selected");
+				let _ = input_sender.send(NameListInput::SelectionChanged(selected_names));
+			}
+		});
+
+		let name_list = gtk::ListView::new(Some(selection_model), Some(name_factory));
+
+		name_list.connect_activate({
 			let list_manager = list_manager.clone();
 			let input_sender = sender.input_sender().clone();
 			move |_, position| {
@@ -125,7 +180,12 @@ where
 			}
 		});
 
-		let model = NameList { list_manager };
+		let model = NameList {
+			list_manager,
+			selected_names: Vec::new(),
+			selected_names_row_controller,
+		};
+		let widgets = view_output!();
 		ComponentParts { model, widgets }
 	}
 
@@ -142,6 +202,36 @@ where
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
+			MultiselectionPreferenceUpdated(NameWithPreferences {
+				mother_preference,
+				father_preference,
+				..
+			}) => {
+				// TODO: Don't destroy the existing selection when applying the value
+				for NameWithPreferences { name, gender, .. } in &self.selected_names {
+					let _ = sender.output(NameListOutput::NamePreferenceUpdated(NameWithPreferences {
+						name: name.clone(),
+						gender: *gender,
+						mother_preference,
+						father_preference,
+					}));
+				}
+			}
+			SelectionChanged(selected_names) => {
+				self.selected_names = selected_names;
+				let count = self.selected_names.len();
+				if count > 1 {
+					let _ = self
+						.selected_names_row_controller
+						.sender()
+						.send(NameListRowInput::SetName(NameWithPreferences {
+							name: format!("{count} selected names"),
+							gender: Gender::Both,
+							mother_preference: None,
+							father_preference: None,
+						}));
+				}
+			}
 			RefreshRow { name } => {
 				self.list_manager
 					.notify_updated(&name)
@@ -156,6 +246,8 @@ pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
+	MultiselectionPreferenceUpdated(NameWithPreferences),
+	SelectionChanged(Vec<NameWithPreferences>),
 	RefreshRow { name: String },
 }
 
