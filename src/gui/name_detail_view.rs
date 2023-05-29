@@ -96,22 +96,31 @@ impl SimpleComponent for NameDetailView {
 				self.name = name;
 				self.filter.name = self.name.name.clone();
 				self.filter.threshold = 3.0;
+				self.send_updated_filter_to_name_list();
 			}
 			SetGender(gender) => {
 				self.filter.gender = gender;
+				self.send_updated_filter_to_name_list();
 			}
 			UpdateThreshold(threshold) => {
 				self.filter.threshold = threshold;
+				self.send_updated_filter_to_name_list();
 			}
 			UpdateNamePreferences(name_with_preferences) => {
 				let _ = sender.output(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
-				return; // don't update the filter
 			}
-			RefreshRow { name: _ } | RefreshAll => {
-				// just trigger the update below
+			RefreshRow { name } => {
+				let _ = self
+					.similar_name_list_controller
+					.sender()
+					.send(NameListInput::RefreshRow { name });
 			}
 		};
+	}
+}
 
+impl NameDetailView {
+	fn send_updated_filter_to_name_list(&self) {
 		let _ = self
 			.similar_name_list_controller
 			.sender()
@@ -126,7 +135,6 @@ pub enum NameDetailViewInput {
 	UpdateNamePreferences(NameWithPreferences),
 	UpdateThreshold(f64),
 	RefreshRow { name: String },
-	RefreshAll,
 }
 
 #[derive(Debug)]
@@ -166,7 +174,7 @@ impl DatabaseView for SimilarNameListView {
 	}
 
 	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
-		Ok(backend.block_on_future(database::views::read_one(&key, backend.database_pool()))?)
+		Ok(backend.block_on_future(database::views::read_one(key, backend.database_pool()))?)
 	}
 }
 

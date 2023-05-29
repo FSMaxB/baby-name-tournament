@@ -183,7 +183,7 @@ impl SimpleComponent for Application {
 				let _ = self
 					.main_view_controller
 					.sender()
-					.send(MainViewInput::RefreshRow { name: name });
+					.send(MainViewInput::RefreshRow { name });
 			}
 			BackToList => {
 				// TODO: Make this better than based on position

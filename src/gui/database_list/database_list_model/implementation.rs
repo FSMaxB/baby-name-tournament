@@ -39,8 +39,8 @@ impl DatabaseListModel {
 	pub fn initialize(&self, database_list_manager: DatabaseListManager<impl DatabaseView>) {
 		let this = self.obj();
 		database_list_manager.register_items_changed_callback(Box::new(
-			clone!(@weak this => move |previous_count, count| {
-				this.items_changed(0, previous_count, count);
+			clone!(@weak this => move |position, removed, added| {
+				this.items_changed(position, removed, added);
 			}),
 		));
 

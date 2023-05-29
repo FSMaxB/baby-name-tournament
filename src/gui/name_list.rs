@@ -219,6 +219,6 @@ impl DatabaseView for NameListView {
 	}
 
 	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
-		Ok(backend.block_on_future(database::views::read_one(&key, backend.database_pool()))?)
+		Ok(backend.block_on_future(database::views::read_one(key, backend.database_pool()))?)
 	}
 }

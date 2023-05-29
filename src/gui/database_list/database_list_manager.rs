@@ -23,7 +23,7 @@ pub struct DatabaseListManager<View: DatabaseView> {
 	view: View,
 }
 
-type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>;
+type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32, u32)>>>;
 
 impl<View: DatabaseView> DatabaseListManager<View> {
 	pub fn new(initial_filter: View::Filter, view: View, backend: Backend) -> anyhow::Result<Self> {
@@ -58,9 +58,8 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		drop(element_cache);
 
 		if let Some(callback) = self.callback.get() {
-			let count = self.count();
-			// FIXME: Change callback so that only a single row can be updated in isolation
-			callback(count, count);
+			let index = u32::try_from(index).expect("Index was larger then the 2^32 supported by GTK");
+			callback(index, 1, 1);
 		}
 
 		Ok(())
@@ -72,7 +71,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		let count = self.count();
 
 		if let Some(callback) = self.callback.get() {
-			callback(previous_count, count);
+			callback(0, previous_count, count);
 		}
 
 		Ok(())
@@ -90,7 +89,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		u32::try_from(self.element_cache.borrow().len()).expect("Had more than 2^32 elements. GTK can't handle that")
 	}
 
-	pub(super) fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32)>) {
+	pub(super) fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32, u32)>) {
 		self.callback
 			.set(callback)
 			.unwrap_or_else(|_| panic!("Callback was already set"));
