@@ -27,8 +27,9 @@ impl SimpleComponent for NameListRow {
 
 			#[name(name_label)]
 			gtk::Label {
+				set_use_markup: true,
 				#[watch]
-				set_label: model.name.name.as_str(),
+				set_label: &format!(r#"<big><b>{}</b></big>"#, model.name.name),
 			},
 
 			#[name(gender_label)]

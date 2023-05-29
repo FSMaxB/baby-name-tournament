@@ -105,7 +105,7 @@ impl SimpleComponent for Application {
 			.launch((
 				backend.clone(),
 				Name {
-					name: "<none>".to_owned(),
+					name: "{none}".to_owned(),
 					gender: Gender::Both,
 				},
 			))

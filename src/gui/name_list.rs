@@ -67,7 +67,7 @@ where
 				let controller = NameListRow::builder()
 					.launch(NameListRowInit {
 						name: Name {
-							name: "<none>".to_owned(),
+							name: "{none}".to_owned(),
 							gender: Gender::Both,
 						},
 						mother_preference: None,
