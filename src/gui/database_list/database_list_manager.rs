@@ -55,6 +55,8 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 
 		element_cache[index] = updated_element;
 
+		drop(element_cache);
+
 		if let Some(callback) = self.callback.get() {
 			let count = self.count();
 			// FIXME: Change callback so that only a single row can be updated in isolation

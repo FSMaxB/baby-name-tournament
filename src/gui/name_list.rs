@@ -140,7 +140,12 @@ where
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
-			Refresh => {
+			RefreshRow { name } => {
+				self.list_manager
+					.notify_updated(&name)
+					.expect("Failed to update single list entry");
+			}
+			RefreshAll => {
 				self.list_manager
 					.notify_changed()
 					.expect("Failed to update list manager");
@@ -154,7 +159,8 @@ pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
-	Refresh,
+	RefreshRow { name: String },
+	RefreshAll,
 }
 
 #[derive(Debug)]
