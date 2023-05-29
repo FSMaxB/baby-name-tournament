@@ -33,7 +33,9 @@ pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> 
 	let runtime_thread = RuntimeThread::start(runtime);
 	let handle = runtime_thread.handle().clone();
 
-	RelmApp::new(APPLICATION_ID).run::<Application>(Backend::new(database_pool, handle));
+	RelmApp::new(APPLICATION_ID).run::<Application>(Backend::new(database_pool.clone(), handle.clone()));
+
+	handle.block_on(database_pool.close());
 
 	runtime_thread.shut_down()
 }

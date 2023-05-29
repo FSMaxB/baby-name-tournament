@@ -52,18 +52,23 @@ impl Cli {
 		match self.command {
 			Parse { name_list } => {
 				runtime.block_on(parse(&name_list))?;
+				runtime.block_on(database_pool.close());
 			}
 			Ingest { name_list } => {
-				runtime.block_on(ingest(&name_list, database_pool))?;
+				runtime.block_on(ingest(&name_list, database_pool.clone()))?;
+				runtime.block_on(database_pool.close());
 			}
 			ListAll { gender } => {
-				runtime.block_on(list_all(gender, database_pool))?;
+				runtime.block_on(list_all(gender, database_pool.clone()))?;
+				runtime.block_on(database_pool.close());
 			}
 			Similarities => {
-				runtime.block_on(similarities(database_pool))?;
+				runtime.block_on(similarities(database_pool.clone()))?;
+				runtime.block_on(database_pool.close());
 			}
 			Random { gender } => {
-				runtime.block_on(random(gender, database_pool))?;
+				runtime.block_on(random(gender, database_pool.clone()))?;
+				runtime.block_on(database_pool.close());
 			}
 			Gui => {
 				gui::start(runtime, database_pool)?;
