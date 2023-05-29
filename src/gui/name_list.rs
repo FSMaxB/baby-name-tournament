@@ -41,7 +41,9 @@ where
 				set_propagate_natural_height: true,
 
 				#[name(name_list)]
-				gtk::ListView {}
+				gtk::ListView {
+					set_show_separators: true,
+				}
 			}
 		}
 	}
