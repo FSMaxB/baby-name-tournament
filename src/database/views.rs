@@ -98,7 +98,7 @@ pub async fn read_all_names(
 			AND (
 				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
 				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
-				OR ($4 AND (parent_name_preferences.name IS NULL OR parent_name_preferences.mother_preference IS NULL or parent_name_preferences.father_preference IS NULL))
+				OR ($4 AND (parent_name_preferences.name IS NULL OR (parent_name_preferences.mother_preference IS NULL AND parent_name_preferences.father_preference IS NULL)))
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
 		ORDER BY names.name ASC
