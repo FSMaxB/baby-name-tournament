@@ -147,11 +147,6 @@ where
 					.notify_updated(&name)
 					.expect("Failed to update single list entry");
 			}
-			RefreshAll => {
-				self.list_manager
-					.notify_changed()
-					.expect("Failed to update list manager");
-			}
 		}
 	}
 }
@@ -162,7 +157,6 @@ pub enum NameListInput<FILTER> {
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
 	RefreshRow { name: String },
-	RefreshAll,
 }
 
 #[derive(Debug)]

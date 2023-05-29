@@ -189,7 +189,6 @@ impl SimpleComponent for Application {
 				// TODO: Make this better than based on position
 				self.stack.pages().select_item(0, true);
 				self.back_button.set_visible(false);
-				let _ = self.main_view_controller.sender().send(MainViewInput::RefreshAll);
 			}
 		}
 	}
