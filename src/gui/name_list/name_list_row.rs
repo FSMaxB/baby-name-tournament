@@ -100,7 +100,7 @@ impl SimpleComponent for NameListRow {
 
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		use NameListRowInput::*;
-		match dbg!(message) {
+		match message {
 			SetName(NameWithPreferences {
 				name,
 				gender,

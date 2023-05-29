@@ -1,5 +1,5 @@
 use crate::gui::backend::Backend;
-use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::{DatabaseView, Model};
 use anyhow::Context;
 use glib::BoxedAnyObject;
 use libadwaita::glib;
@@ -23,7 +23,7 @@ pub struct DatabaseListManager<View: DatabaseView> {
 	view: View,
 }
 
-type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32)>>>;
+type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32, u32)>>>;
 
 impl<View: DatabaseView> DatabaseListManager<View> {
 	pub fn new(initial_filter: View::Filter, view: View, backend: Backend) -> anyhow::Result<Self> {
@@ -44,13 +44,34 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		self.notify_changed()
 	}
 
+	pub fn notify_updated(&self, key: &<View::Model as Model>::Key) -> anyhow::Result<()> {
+		let updated_element = self.view.read_by_key(&self.backend, key)?;
+
+		let mut element_cache = self.element_cache.borrow_mut();
+		let Some(index) = element_cache.iter().position(|element| element.unique_key() == key) else {
+			// if it isn't in the list, it can't be updated
+			return Ok(())
+		};
+
+		element_cache[index] = updated_element;
+
+		drop(element_cache);
+
+		if let Some(callback) = self.callback.get() {
+			let index = u32::try_from(index).expect("Index was larger then the 2^32 supported by GTK");
+			callback(index, 1, 1);
+		}
+
+		Ok(())
+	}
+
 	pub fn notify_changed(&self) -> anyhow::Result<()> {
 		let previous_count = self.count();
 		self.fetch_all()?;
 		let count = self.count();
 
 		if let Some(callback) = self.callback.get() {
-			callback(previous_count, count);
+			callback(0, previous_count, count);
 		}
 
 		Ok(())
@@ -68,7 +89,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		u32::try_from(self.element_cache.borrow().len()).expect("Had more than 2^32 elements. GTK can't handle that")
 	}
 
-	pub(super) fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32)>) {
+	pub(super) fn register_items_changed_callback(&self, callback: Box<dyn Fn(u32, u32, u32)>) {
 		self.callback
 			.set(callback)
 			.unwrap_or_else(|_| panic!("Callback was already set"));

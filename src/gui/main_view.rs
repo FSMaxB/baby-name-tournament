@@ -24,7 +24,8 @@ pub enum MainViewInput {
 	NamePreferenceUpdated(NameWithPreferences),
 	UpdateNamePreferenceFilter(PreferenceFilter),
 	UpdateSearchTerm(String),
-	Refresh,
+	RefreshRow { name: String },
+	RefreshAll,
 }
 
 #[derive(Debug)]
@@ -150,8 +151,14 @@ impl SimpleComponent for MainView {
 					.sender()
 					.send(NameListInput::UpdateFilter(self.filter.clone()));
 			}
-			Refresh => {
-				let _ = self.name_list_controller.sender().send(NameListInput::Refresh);
+			RefreshRow { name } => {
+				let _ = self
+					.name_list_controller
+					.sender()
+					.send(NameListInput::RefreshRow { name });
+			}
+			RefreshAll => {
+				let _ = self.name_list_controller.sender().send(NameListInput::RefreshAll);
 			}
 		}
 	}

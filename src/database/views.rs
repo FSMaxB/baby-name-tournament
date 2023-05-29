@@ -10,6 +10,27 @@ pub struct NameWithPreferences {
 	pub father_preference: Option<NamePreference>,
 }
 
+pub async fn read_one(name: &str, database_pool: &SqlitePool) -> sqlx::Result<NameWithPreferences> {
+	sqlx::query_as!(
+		NameWithPreferences,
+		r#"
+		SELECT
+			names.name as "name!",
+			gender as "gender!: Gender",
+			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
+			parent_name_preferences.father_preference as "father_preference: NamePreference"
+		FROM names
+			LEFT JOIN parent_name_preferences ON
+				names.name = parent_name_preferences.name
+		WHERE
+			names.name = $1
+		"#,
+		name,
+	)
+	.fetch_one(database_pool)
+	.await
+}
+
 pub async fn read_all_similar(
 	name: &str,
 	gender: Gender,

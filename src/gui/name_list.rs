@@ -3,7 +3,7 @@ use crate::database;
 use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::backend::Backend;
-use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView};
+use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView, Model};
 use crate::gui::name_list::name_list_row::{NameListRow, NameListRowInit, NameListRowInput, NameListRowOutput};
 use gtk::{prelude::*, PolicyType, SignalListItemFactory, SingleSelection};
 use libadwaita::glib::BoxedAnyObject;
@@ -140,7 +140,12 @@ where
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
-			Refresh => {
+			RefreshRow { name } => {
+				self.list_manager
+					.notify_updated(&name)
+					.expect("Failed to update single list entry");
+			}
+			RefreshAll => {
 				self.list_manager
 					.notify_changed()
 					.expect("Failed to update list manager");
@@ -154,7 +159,8 @@ pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
 	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
-	Refresh,
+	RefreshRow { name: String },
+	RefreshAll,
 }
 
 #[derive(Debug)]
@@ -210,5 +216,9 @@ impl DatabaseView for NameListView {
 			name_contains.as_deref(),
 			backend.database_pool(),
 		))?)
+	}
+
+	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
+		Ok(backend.block_on_future(database::views::read_one(key, backend.database_pool()))?)
 	}
 }

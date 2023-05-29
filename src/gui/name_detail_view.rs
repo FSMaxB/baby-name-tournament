@@ -3,7 +3,7 @@ use crate::database;
 use crate::database::views::NameWithPreferences;
 use crate::database::Name;
 use crate::gui::backend::Backend;
-use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::{DatabaseView, Model};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput};
 use gtk::{Adjustment, Align, Label, Orientation};
 use libadwaita::prelude::*;
@@ -96,22 +96,31 @@ impl SimpleComponent for NameDetailView {
 				self.name = name;
 				self.filter.name = self.name.name.clone();
 				self.filter.threshold = 3.0;
+				self.send_updated_filter_to_name_list();
 			}
 			SetGender(gender) => {
 				self.filter.gender = gender;
+				self.send_updated_filter_to_name_list();
 			}
 			UpdateThreshold(threshold) => {
 				self.filter.threshold = threshold;
+				self.send_updated_filter_to_name_list();
 			}
 			UpdateNamePreferences(name_with_preferences) => {
 				let _ = sender.output(NameDetailViewOutput::NamePreferenceSet(name_with_preferences));
-				return; // don't update the filter
 			}
-			Refresh => {
-				// just trigger the update below
+			RefreshRow { name } => {
+				let _ = self
+					.similar_name_list_controller
+					.sender()
+					.send(NameListInput::RefreshRow { name });
 			}
 		};
+	}
+}
 
+impl NameDetailView {
+	fn send_updated_filter_to_name_list(&self) {
 		let _ = self
 			.similar_name_list_controller
 			.sender()
@@ -125,7 +134,7 @@ pub enum NameDetailViewInput {
 	SetGender(Gender),
 	UpdateNamePreferences(NameWithPreferences),
 	UpdateThreshold(f64),
-	Refresh,
+	RefreshRow { name: String },
 }
 
 #[derive(Debug)]
@@ -162,5 +171,17 @@ impl DatabaseView for SimilarNameListView {
 			*threshold,
 			backend.database_pool(),
 		))?)
+	}
+
+	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
+		Ok(backend.block_on_future(database::views::read_one(key, backend.database_pool()))?)
+	}
+}
+
+impl Model for NameWithPreferences {
+	type Key = String;
+
+	fn unique_key(&self) -> &Self::Key {
+		&self.name
 	}
 }
