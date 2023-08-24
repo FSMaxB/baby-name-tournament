@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\t\t\tSELECT\n\t\t\t\t\ta.name as a,\n\t\t\t\t\tb.name as b\n\t\t\t\tFROM names as a\n\t\t\t\t\tCROSS JOIN names as b\n\t\t\t\tWHERE\n\t\t\t\t\t(a.name, b.name) > ($1, $2)\n\t\t\t\tORDER BY a.name, b.name\n\t\t\t\tLIMIT $3\n\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "a",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "b",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "1c1cb14d6d50d25553004499a3e9d418803d0bf8b26d2ac8071ea8d51bbe6a0f"
+}

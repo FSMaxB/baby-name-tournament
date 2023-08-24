@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tINSERT INTO names (\n\t\t\tname,\n\t\t\tgender\n\t\t) VALUES ($1, $2)\n\t\tON CONFLICT DO\n\t\tUPDATE\n\t\tSET\n\t\t\tgender = CASE names.gender\n\t\t\t\tWHEN 'female' THEN\n\t\t\t\t\tCASE $2\n\t\t\t\t\t\tWHEN 'female' THEN 'female'\n\t\t\t\t\t\tELSE 'both'\n\t\t\t\t\tEND\n\t\t\t\tWHEN 'male' THEN\n\t\t\t\t\tCASE $2\n\t\t\t\t\t\tWHEN 'male' THEN 'male'\n\t\t\t\t\t\tELSE 'both'\n\t\t\t\t\tEND\n\t\t\t\tWHEN 'both' THEN 'both'\n\t\t\tEND\n\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "8abbf2bed3048b8040d51ba5234c55486e9a34b8412a7ac901633e2bdb2a7d2b"
+}

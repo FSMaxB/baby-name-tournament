@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tINSERT INTO name_records (\n\t\t\tname,\n\t\t\tcount,\n\t\t\tgender,\n\t\t\tsource\n\t\t) VALUES ($1, $2, $3, $4)\n\t\tON CONFLICT DO NOTHING\n\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "8a828cdd032e484132dae76db4479cf3d2333dcd1d9626788c80bd8261089731"
+}

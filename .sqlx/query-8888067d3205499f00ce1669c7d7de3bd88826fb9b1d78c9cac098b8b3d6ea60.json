@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tSELECT\n\t\t\tname as \"name!\",\n\t\t\tgender as \"gender!: Gender\"\n\t\tFROM names\n\t\tWHERE\n\t\t\tCASE $1\n\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\tEND\n\t\tORDER BY RANDOM()\n\t\tLIMIT 1\n\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "name!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "gender!: Gender",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "8888067d3205499f00ce1669c7d7de3bd88826fb9b1d78c9cac098b8b3d6ea60"
+}

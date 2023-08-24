@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\t\tSELECT\n\t\t\t\tname,\n\t\t\t\tgender as \"gender: Gender\"\n\t\t\tFROM names\n\t\t\tWHERE\n\t\t\t\tname > $1\n\t\t\t\tAND CASE $2\n\t\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\t\tEND\n\t\t\tORDER BY name ASC\n\t\t\tLIMIT $3\n\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "gender: Gender",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f0602d903e4539ccacd42266dc276f30efed3288a9dab8606f3d6a3754d86ac4"
+}
