@@ -6,9 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 async-channel = "1"
-async-trait = "0.1"
 clap = { version = "4", features = ["derive", "env"] }
-crossterm = {version = "0.26", features = ["event-stream"]}
 derive_more = "0.99"
 dotenvy = "0.15"
 csv = "1"
@@ -24,4 +22,3 @@ similar-string = "1"
 stringmetrics = "2"
 strum = { version = "0.25", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "io-std", "time", "macros"] }
-url = "2"
