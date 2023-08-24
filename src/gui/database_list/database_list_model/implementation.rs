@@ -1,11 +1,11 @@
 use crate::gui::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
 use crate::gui::database_list::DatabaseView;
 use crate::gui::force_unwrapped_field::ForceUnwrappedField;
+use adw::subclass::prelude::*;
+use adw::{gio, glib};
 use gio::{prelude::*, ListModel};
-use glib::Type;
-use libadwaita::glib::{clone, BoxedAnyObject};
-use libadwaita::subclass::prelude::*;
-use libadwaita::{gio, glib};
+use glib::{clone, BoxedAnyObject, Type};
+use relm4::adw;
 
 #[derive(Default)]
 pub struct DatabaseListModel {

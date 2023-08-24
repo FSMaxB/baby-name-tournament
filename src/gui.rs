@@ -1,11 +1,10 @@
 use crate::csv_parser::Gender;
 use crate::gui::name_detail_view::{NameDetailViewInput, NameDetailViewOutput};
 use crate::gui::runtime_thread::RuntimeThread;
+use adw::{prelude::*, HeaderBar};
 use gtk::{Orientation, StackTransitionType};
-use libadwaita::prelude::*;
-use libadwaita::HeaderBar;
 use relm4::{
-	gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp, SimpleComponent,
+	adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp, SimpleComponent,
 };
 use sqlx::SqlitePool;
 use tokio::runtime::Runtime;
@@ -33,7 +32,9 @@ pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> 
 	let runtime_thread = RuntimeThread::start(runtime);
 	let handle = runtime_thread.handle().clone();
 
-	RelmApp::new(APPLICATION_ID).run::<Application>(Backend::new(database_pool.clone(), handle.clone()));
+	RelmApp::new(APPLICATION_ID)
+		.with_args(vec![])
+		.run::<Application>(Backend::new(database_pool.clone(), handle.clone()));
 
 	handle.block_on(database_pool.close());
 
@@ -63,7 +64,7 @@ impl SimpleComponent for Application {
 	type Output = ();
 
 	view! {
-		libadwaita::ApplicationWindow {
+		adw::ApplicationWindow {
 			set_title: Some("Baby Name Tournament"),
 			set_default_size: (480, 640),
 

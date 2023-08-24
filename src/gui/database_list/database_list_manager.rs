@@ -1,9 +1,9 @@
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseView, Model};
+use adw::glib;
 use anyhow::Context;
 use glib::BoxedAnyObject;
-use libadwaita::glib;
-use relm4::gtk;
+use relm4::{adw, gtk};
 use static_assertions::assert_obj_safe;
 use std::cell::{OnceCell, RefCell};
 use std::iter;
