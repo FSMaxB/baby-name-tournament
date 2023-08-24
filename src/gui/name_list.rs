@@ -5,10 +5,11 @@ use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView, Model};
 use crate::gui::name_list::name_list_row::{NameListRow, NameListRowInit, NameListRowInput, NameListRowOutput};
+use adw::glib;
+use glib::BoxedAnyObject;
+use gtk::ffi::GtkListItem;
 use gtk::{prelude::*, Orientation, PolicyType, SignalListItemFactory};
-use libadwaita::glib::BoxedAnyObject;
-use libadwaita::gtk;
-use libadwaita::gtk::ffi::GtkListItem;
+use relm4::{adw, gtk};
 use relm4::{Component, ComponentParts, ComponentSender, SimpleComponent};
 use relm4::{ComponentController, Controller};
 use std::cell::RefCell;
@@ -173,7 +174,7 @@ where
 			let list_manager = list_manager.clone();
 			let input_sender = sender.input_sender().clone();
 			move |_, position| {
-				let Ok(NameWithPreferences {name, gender, ..}) = list_manager.read_at_offset(position) else {
+				let Ok(NameWithPreferences { name, gender, .. }) = list_manager.read_at_offset(position) else {
 					return;
 				};
 				let _ = input_sender.send(NameListInput::NameSelected(Name { name, gender }));

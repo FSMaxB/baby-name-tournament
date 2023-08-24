@@ -5,9 +5,9 @@ use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseView, Model};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput};
+use adw::prelude::*;
 use gtk::{Adjustment, Align, Label, Orientation};
-use libadwaita::prelude::*;
-use relm4::{gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
+use relm4::{adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
 
 pub struct NameDetailView {
 	name: Name,
