@@ -2,8 +2,8 @@ use crate::csv_parser::Gender;
 use crate::database;
 use crate::database::Name;
 use futures_util::TryStreamExt;
-use once_cell::unsync::OnceCell;
 use sqlx::SqlitePool;
+use std::cell::OnceCell;
 use std::future::Future;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -22,10 +22,11 @@ struct BackendInner {
 impl Backend {
 	pub fn new(database_pool: SqlitePool, runtime_handle: runtime::Handle) -> Self {
 		Self {
-			inner: OnceCell::with_value(Rc::new(BackendInner {
+			inner: Rc::new(BackendInner {
 				database_pool,
 				runtime_handle,
-			})),
+			})
+			.into(),
 		}
 	}
 

@@ -138,7 +138,6 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "libadwaita",
- "once_cell",
  "relm4",
  "serde",
  "similar-string",

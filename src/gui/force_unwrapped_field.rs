@@ -1,4 +1,4 @@
-use once_cell::unsync::OnceCell;
+use std::cell::OnceCell;
 use std::ops::Deref;
 
 pub struct ForceUnwrappedField<T>(OnceCell<T>);
@@ -25,7 +25,7 @@ impl<T> Deref for ForceUnwrappedField<T> {
 impl<T> ForceUnwrappedField<T> {
 	#[allow(unused)]
 	pub fn new(value: T) -> Self {
-		Self(OnceCell::with_value(value))
+		Self(value.into())
 	}
 
 	pub fn initialize(&self, value: T) {

@@ -3,10 +3,9 @@ use crate::gui::database_list::{DatabaseView, Model};
 use anyhow::Context;
 use glib::BoxedAnyObject;
 use libadwaita::glib;
-use once_cell::unsync;
 use relm4::gtk;
 use static_assertions::assert_obj_safe;
-use std::cell::RefCell;
+use std::cell::{OnceCell, RefCell};
 use std::iter;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -25,7 +24,7 @@ pub struct DatabaseListManager<View: DatabaseView> {
 	view: View,
 }
 
-type Callback = Rc<unsync::OnceCell<Box<dyn Fn(u32, u32, u32)>>>;
+type Callback = Rc<OnceCell<Box<dyn Fn(u32, u32, u32)>>>;
 
 impl<View: DatabaseView> DatabaseListManager<View> {
 	pub fn new(initial_filter: View::Filter, view: View, backend: Backend) -> anyhow::Result<Self> {
@@ -52,7 +51,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 		let mut element_cache = self.element_cache.borrow_mut();
 		let Some(index) = element_cache.iter().position(|element| element.unique_key() == key) else {
 			// if it isn't in the list, it can't be updated
-			return Ok(())
+			return Ok(());
 		};
 
 		element_cache[index] = updated_element;
