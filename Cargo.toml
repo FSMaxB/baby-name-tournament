@@ -8,7 +8,7 @@ anyhow = "1"
 async-channel = "1"
 async-trait = "0.1"
 clap = { version = "4", features = ["derive", "env"] }
-crossterm = {version = "0.26", features = ["event-stream"]}
+crossterm = {version = "0.27", features = ["event-stream"]}
 derive_more = "0.99"
 dotenvy = "0.15"
 csv = "1"
