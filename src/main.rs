@@ -3,8 +3,9 @@ use crate::similarities::{Similarity, SimilarityStatistics};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
-use futures_util::{StreamExt, TryStreamExt};
+use futures_util::TryStreamExt;
 use sqlx::SqlitePool;
+use std::future;
 use std::path::{Path, PathBuf};
 use tokio::runtime;
 
@@ -79,23 +80,29 @@ impl Cli {
 }
 
 pub async fn parse(name_list: &Path) -> anyhow::Result<()> {
-	let mut name_stream = stream_blocking_iterator(parse_csv(name_list)?);
-	while let Some(line) = name_stream.next().await {
-		let line = line?;
-		println!("{line:?}");
-	}
+	stream_blocking_iterator(parse_csv(name_list)?)
+		.try_for_each(|line| {
+			println!("{line:?}");
+			future::ready(Ok(()))
+		})
+		.await?;
+
 	Ok(())
 }
 
 pub async fn ingest(name_list: &Path, database_pool: SqlitePool) -> anyhow::Result<()> {
 	let source = name_list.file_name().context("Missing filename")?.to_string_lossy();
 
-	let mut name_stream = stream_blocking_iterator(parse_csv(name_list)?);
-	while let Some(record) = name_stream.next().await {
-		let record = record?;
-		database::upsert_name(&record.name, record.gender, &database_pool).await?;
-		database::insert_name_record(&record, &source, &database_pool).await?;
-	}
+	stream_blocking_iterator(parse_csv(name_list)?)
+		.try_for_each(|record| {
+			let database_pool = &database_pool;
+			let source = &source;
+			async move {
+				database::upsert_name(&record.name, record.gender, &database_pool).await?;
+				Ok(database::insert_name_record(&record, &source, &database_pool).await?)
+			}
+		})
+		.await?;
 	Ok(())
 }
 
