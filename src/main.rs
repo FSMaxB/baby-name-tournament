@@ -98,8 +98,8 @@ pub async fn ingest(name_list: &Path, database_pool: SqlitePool) -> anyhow::Resu
 			let database_pool = &database_pool;
 			let source = &source;
 			async move {
-				database::upsert_name(&record.name, record.gender, &database_pool).await?;
-				Ok(database::insert_name_record(&record, &source, &database_pool).await?)
+				database::upsert_name(&record.name, record.gender, database_pool).await?;
+				Ok(database::insert_name_record(&record, source, database_pool).await?)
 			}
 		})
 		.await?;

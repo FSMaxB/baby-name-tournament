@@ -87,7 +87,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 	}
 
 	pub fn read_from_selection(&self, selection: &gtk::Bitset) -> anyhow::Result<Vec<View::Model>> {
-		let Some((iterator, first)) = gtk::BitsetIter::init_first(&selection) else {
+		let Some((iterator, first)) = gtk::BitsetIter::init_first(selection) else {
 			return Ok(Vec::new());
 		};
 
