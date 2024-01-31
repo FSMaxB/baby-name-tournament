@@ -17,5 +17,5 @@ sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls"] }
 static_assertions = "1"
 similar-string = "1"
 stringmetrics = "2"
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "io-std", "time", "macros"] }
