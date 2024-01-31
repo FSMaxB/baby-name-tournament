@@ -15,15 +15,7 @@ pub struct NameRecord {
 }
 
 #[derive(
-	Clone,
-	Copy,
-	Debug,
-	Deserialize,
-	sqlx::Type,
-	strum::Display,
-	strum::EnumString,
-	strum::AsRefStr,
-	strum::EnumVariantNames,
+	Clone, Copy, Debug, Deserialize, sqlx::Type, strum::Display, strum::EnumString, strum::AsRefStr, strum::VariantNames,
 )]
 #[serde(rename_all = "snake_case")]
 #[sqlx(rename_all = "snake_case")]
