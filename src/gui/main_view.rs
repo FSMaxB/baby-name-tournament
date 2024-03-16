@@ -67,7 +67,7 @@ impl SimpleComponent for MainView {
 		}
 	}
 
-	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init(backend: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let name_list_controller = NameList::builder()
 			.launch((NameListViewFilter::default(), backend))
 			.forward(sender.input_sender(), |output| match output {

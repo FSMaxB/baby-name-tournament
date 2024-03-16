@@ -20,10 +20,10 @@ impl SimpleComponent for GenderDropdown {
 		}
 	}
 
-	fn init((): Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init((): Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let widgets = view_output!();
 
-		sender.output(selected_gender(root)).expect("Failed to send gender");
+		sender.output(selected_gender(&root)).expect("Failed to send gender");
 
 		ComponentParts { model: Self, widgets }
 	}

@@ -62,7 +62,7 @@ impl SimpleComponent for NamePreferenceView {
 
 	fn init(
 		(parent_name, preference): Self::Init,
-		_root: &Self::Root,
+		_root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let model = Self { preference };

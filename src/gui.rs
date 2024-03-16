@@ -89,7 +89,7 @@ impl SimpleComponent for Application {
 		}
 	}
 
-	fn init(backend: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init(backend: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let main_view_controller =
 			MainView::builder()
 				.launch(backend.clone())
