@@ -10,7 +10,7 @@ clap = { version = "4", features = ["derive", "env"] }
 derive_more = "0.99"
 dotenvy = "0.15"
 csv = "1"
-futures-util = { version = "0.3", default-features = false }
+futures-util = { version = "0.3.30", default-features = false }
 relm4 = { version = "0.8", features = ["libadwaita"] }
 serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls"] }
