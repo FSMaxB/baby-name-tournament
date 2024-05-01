@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-async-channel = "2"
+async-channel = "2.2.1"
 clap = { version = "4", features = ["derive", "env"] }
 derive_more = "0.99"
 dotenvy = "0.15"
