@@ -44,7 +44,7 @@ impl SimpleComponent for PreferenceFilterComponent {
 				}
 			},
 			gtk::Image {
-				set_from_icon_name: Some("emblem-favorite-symbolic"),
+				set_icon_name: Some("emblem-favorite-symbolic"),
 			},
 
 			#[local]
@@ -55,7 +55,7 @@ impl SimpleComponent for PreferenceFilterComponent {
 				}
 			},
 			gtk::Image {
-				set_from_icon_name: Some("action-unavailable-symbolic"),
+				set_icon_name: Some("action-unavailable-symbolic"),
 			},
 
 			#[local]

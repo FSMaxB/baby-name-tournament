@@ -38,7 +38,7 @@ impl SimpleComponent for NamePreferenceView {
 					}
 				},
 				gtk::Image {
-					set_from_icon_name: Some("emblem-favorite-symbolic"),
+					set_icon_name: Some("emblem-favorite-symbolic"),
 				},
 				#[name(nogo_button)]
 				gtk::CheckButton {
@@ -54,7 +54,7 @@ impl SimpleComponent for NamePreferenceView {
 					}
 				},
 				gtk::Image {
-					set_from_icon_name: Some("action-unavailable-symbolic"),
+					set_icon_name: Some("action-unavailable-symbolic"),
 				},
 			},
 		}
