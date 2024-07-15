@@ -94,7 +94,7 @@ impl SimpleComponent for NameDetailView {
 		match message {
 			SetName(name) => {
 				self.name = name;
-				self.filter.name = self.name.name.clone();
+				self.filter.name.clone_from(&self.name.name);
 				self.filter.threshold = 3.0;
 				self.send_updated_filter_to_name_list();
 			}
