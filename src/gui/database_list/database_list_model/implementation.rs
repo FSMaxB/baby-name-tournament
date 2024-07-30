@@ -38,11 +38,13 @@ impl ListModelImpl for DatabaseListModel {
 impl DatabaseListModel {
 	pub fn initialize(&self, database_list_manager: DatabaseListManager<impl DatabaseView>) {
 		let this = self.obj();
-		database_list_manager.register_items_changed_callback(Box::new(
-			clone!(@weak this => move |position, removed, added| {
+		database_list_manager.register_items_changed_callback(Box::new(clone!(
+			#[weak]
+			this,
+			move |position, removed, added| {
 				this.items_changed(position, removed, added);
-			}),
-		));
+			}
+		)));
 
 		self.database_view.initialize(database_list_manager.erase());
 	}
