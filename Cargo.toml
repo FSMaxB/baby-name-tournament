@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1"
 async-channel = "2"
 clap = { version = "4", features = ["derive", "env"] }
-derive_more = "0.99"
+derive_more = "1.0"
 dotenvy = "0.15"
 csv = "1"
 futures-util = { version = "0.3", default-features = false }
