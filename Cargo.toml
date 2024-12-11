@@ -2,6 +2,7 @@
 name = "baby-name-tournament"
 version = "0.1.0"
 edition = "2021"
+license = "ISC"
 
 [dependencies]
 anyhow = "1"
