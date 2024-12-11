@@ -72,7 +72,7 @@ impl Cli {
 				runtime.block_on(database_pool.close());
 			}
 			Gui => {
-				gui::start(runtime, database_pool)?;
+				gui::start(runtime, &database_pool)?;
 			}
 		}
 		Ok(())

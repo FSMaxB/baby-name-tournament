@@ -86,6 +86,7 @@ impl<View: DatabaseView> DatabaseListManager<View> {
 			.with_context(|| format!("No element at offset {offset}"))
 	}
 
+	#[expect(clippy::cast_possible_truncation)]
 	pub fn read_from_selection(&self, selection: &gtk::Bitset) -> anyhow::Result<Vec<View::Model>> {
 		let Some((iterator, first)) = gtk::BitsetIter::init_first(selection) else {
 			return Ok(Vec::new());

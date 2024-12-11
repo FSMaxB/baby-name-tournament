@@ -69,9 +69,10 @@ where
 		}
 	}
 
+	#[expect(clippy::too_many_lines)]
 	fn init(
 		(initial_filter, backend): Self::Init,
-		_root: Self::Root,
+		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let selected_names_row_controller = NameListRow::builder()

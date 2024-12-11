@@ -9,6 +9,7 @@ pub struct Similarity {
 	pub b: String,
 	pub levenshtein: u32,
 	pub longest_common_substring: u16,
+	#[expect(clippy::struct_field_names)]
 	pub longest_common_substring_similarity: f64,
 }
 

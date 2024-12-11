@@ -60,7 +60,7 @@ impl SimpleComponent for NameDetailView {
 		}
 	}
 
-	fn init((backend, name): Self::Init, _root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init((backend, name): Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let filter = SimilarNameListViewFilter {
 			name: name.name.clone(),
 			gender: name.gender,
@@ -80,8 +80,8 @@ impl SimpleComponent for NameDetailView {
 
 		let model = NameDetailView {
 			name,
-			filter,
 			similar_name_list_controller,
+			filter,
 		};
 
 		let widgets = view_output!();
