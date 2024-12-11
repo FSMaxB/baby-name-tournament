@@ -1,6 +1,7 @@
 use gtk::{prelude::*, Align, Orientation};
 use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
 
+#[expect(clippy::struct_field_names)]
 pub struct PreferenceFilterComponent {
 	show_favorite_checkbox: gtk::CheckButton,
 	show_nogo_checkbox: gtk::CheckButton,
@@ -69,7 +70,7 @@ impl SimpleComponent for PreferenceFilterComponent {
 		}
 	}
 
-	fn init(preference_filter: Self::Init, _root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+	fn init(preference_filter: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let show_favorite_checkbox = gtk::CheckButton::new();
 		let show_nogo_checkbox = gtk::CheckButton::new();
 		let show_undecided_checkbox = gtk::CheckButton::new();

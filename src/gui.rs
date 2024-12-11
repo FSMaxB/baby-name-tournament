@@ -28,7 +28,7 @@ use crate::gui::main_view::{MainView, MainViewInput, MainViewOutput};
 use crate::gui::name_detail_view::NameDetailView;
 use backend::Backend;
 
-pub fn start(runtime: Runtime, database_pool: SqlitePool) -> anyhow::Result<()> {
+pub fn start(runtime: Runtime, database_pool: &SqlitePool) -> anyhow::Result<()> {
 	let runtime_thread = RuntimeThread::start(runtime);
 	let handle = runtime_thread.handle().clone();
 

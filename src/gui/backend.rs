@@ -35,9 +35,10 @@ impl Backend {
 			panic!("Tried to initialize backend from uninitialized backend");
 		};
 
-		if self.inner.set(inner).is_err() {
-			panic!("Tried to initialize backend that was already initialized");
-		}
+		assert!(
+			self.inner.set(inner).is_ok(),
+			"Tried to initialize backend that was already initialized"
+		);
 	}
 
 	pub fn database_pool(&self) -> &SqlitePool {

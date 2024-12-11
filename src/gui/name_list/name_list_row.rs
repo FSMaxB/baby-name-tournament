@@ -67,7 +67,7 @@ impl SimpleComponent for NameListRow {
 			mother_preference,
 			father_preference,
 		}: Self::Init,
-		_root: Self::Root,
+		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let shared_preference_controller = NamePreferenceView::builder()

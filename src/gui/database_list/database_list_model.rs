@@ -29,6 +29,6 @@ impl DatabaseListModel {
 	}
 
 	pub fn initialize(&self, database_list_manager: DatabaseListManager<impl DatabaseView>) {
-		self.imp().initialize(database_list_manager)
+		self.imp().initialize(database_list_manager);
 	}
 }
