@@ -31,45 +31,6 @@ pub async fn read_one(name: &str, database_pool: &SqlitePool) -> sqlx::Result<Na
 	.await
 }
 
-pub async fn read_all_similar(
-	name: &str,
-	gender: Gender,
-	threshold: f64,
-	database_pool: &SqlitePool,
-) -> sqlx::Result<Vec<NameWithPreferences>> {
-	sqlx::query_as!(
-		NameWithPreferences,
-		r#"
-		SELECT
-			names.name as "name!",
-			gender as "gender!: Gender",
-			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
-			parent_name_preferences.father_preference as "father_preference: NamePreference"
-		FROM similarities
-		INNER JOIN names ON
-			b = names.name
-		LEFT JOIN parent_name_preferences
-			ON names.name = parent_name_preferences.name
-		WHERE
-			(a = $1)
-			AND (a != b)
-			AND
-				CASE $2
-					WHEN 'both' THEN TRUE
-					WHEN 'female' THEN gender != 'male'
-					WHEN 'male' THEN gender != 'female'
-				END
-			AND (levenshtein < $3)
-		ORDER BY b DESC
-		"#,
-		name,
-		gender,
-		threshold,
-	)
-	.fetch_all(database_pool)
-	.await
-}
-
 pub async fn read_all_names(
 	gender: Gender,
 	include_favorite: bool,

@@ -69,7 +69,6 @@ where
 		}
 	}
 
-	#[expect(clippy::too_many_lines)]
 	fn init(
 		(initial_filter, backend): Self::Init,
 		root: Self::Root,
@@ -171,17 +170,6 @@ where
 
 		let name_list = gtk::ListView::new(Some(selection_model), Some(name_factory));
 
-		name_list.connect_activate({
-			let list_manager = list_manager.clone();
-			let input_sender = sender.input_sender().clone();
-			move |_, position| {
-				let Ok(NameWithPreferences { name, gender, .. }) = list_manager.read_at_offset(position) else {
-					return;
-				};
-				let _ = input_sender.send(NameListInput::NameSelected(Name { name, gender }));
-			}
-		});
-
 		let model = NameList {
 			list_manager,
 			selected_names: Vec::new(),
@@ -198,9 +186,6 @@ where
 				.list_manager
 				.update_filter(filter)
 				.expect("Failed to update list manager"),
-			NameSelected(name) => {
-				let _ = sender.output(NameListOutput::NameSelected(name));
-			}
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
@@ -246,7 +231,6 @@ where
 #[derive(Debug)]
 pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
-	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
 	MultiselectionPreferenceUpdated(NameWithPreferences),
 	SelectionChanged(Vec<NameWithPreferences>),
@@ -255,7 +239,6 @@ pub enum NameListInput<FILTER> {
 
 #[derive(Debug)]
 pub enum NameListOutput {
-	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
 }
 
@@ -310,5 +293,13 @@ impl DatabaseView for NameListView {
 
 	fn read_by_key(&self, backend: &Backend, key: &<Self::Model as Model>::Key) -> anyhow::Result<Self::Model> {
 		Ok(backend.block_on_future(database::views::read_one(key, backend.database_pool()))?)
+	}
+}
+
+impl Model for NameWithPreferences {
+	type Key = String;
+
+	fn unique_key(&self) -> &Self::Key {
+		&self.name
 	}
 }

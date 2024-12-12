@@ -1,6 +1,5 @@
 use crate::csv_parser::Gender;
 use crate::database::views::NameWithPreferences;
-use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
@@ -20,7 +19,6 @@ pub struct MainView {
 #[derive(Debug)]
 pub enum MainViewInput {
 	GenderSelected(Gender),
-	NameSelected(Name),
 	NamePreferenceUpdated(NameWithPreferences),
 	UpdateNamePreferenceFilter(PreferenceFilter),
 	UpdateSearchTerm(String),
@@ -30,8 +28,6 @@ pub enum MainViewInput {
 #[derive(Debug)]
 pub enum MainViewOutput {
 	NamePreferenceUpdated(NameWithPreferences),
-	NameSelected(Name),
-	GenderSelected(Gender),
 }
 
 #[relm4::component(pub)]
@@ -71,7 +67,6 @@ impl SimpleComponent for MainView {
 		let name_list_controller = NameList::builder()
 			.launch((NameListViewFilter::default(), backend))
 			.forward(sender.input_sender(), |output| match output {
-				NameListOutput::NameSelected(name) => MainViewInput::NameSelected(name),
 				NameListOutput::NamePreferenceUpdated(name_with_preferences) => {
 					MainViewInput::NamePreferenceUpdated(name_with_preferences)
 				}
@@ -116,10 +111,6 @@ impl SimpleComponent for MainView {
 					.name_list_controller
 					.sender()
 					.send(NameListInput::UpdateFilter(self.filter.clone()));
-				let _ = sender.output(MainViewOutput::GenderSelected(gender));
-			}
-			NameSelected(name) => {
-				let _ = sender.output(MainViewOutput::NameSelected(name));
 			}
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(MainViewOutput::NamePreferenceUpdated(name_with_preferences));
