@@ -1,5 +1,4 @@
 use crate::csv_parser::{parse_csv, Gender};
-use crate::similarities::{Similarity, SimilarityStatistics};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;
@@ -12,7 +11,6 @@ use tokio::runtime;
 mod csv_parser;
 mod database;
 mod gui;
-mod similarities;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
@@ -38,7 +36,6 @@ enum Command {
 	Parse { name_list: PathBuf },
 	Ingest { name_list: PathBuf },
 	ListAll { gender: Gender },
-	Similarities,
 	Random { gender: Gender },
 	Gui,
 }
@@ -61,10 +58,6 @@ impl Cli {
 			}
 			ListAll { gender } => {
 				runtime.block_on(list_all(gender, database_pool.clone()))?;
-				runtime.block_on(database_pool.close());
-			}
-			Similarities => {
-				runtime.block_on(similarities(database_pool.clone()))?;
 				runtime.block_on(database_pool.close());
 			}
 			Random { gender } => {
@@ -111,27 +104,6 @@ pub async fn list_all(gender: Gender, database_pool: SqlitePool) -> anyhow::Resu
 		.try_for_each(|name| {
 			println!("{name:?}");
 			std::future::ready(Ok(()))
-		})
-		.await?;
-	Ok(())
-}
-
-pub async fn similarities(database_pool: SqlitePool) -> anyhow::Result<()> {
-	let mut statistics = SimilarityStatistics::default();
-
-	database::list_all_pairs(&database_pool)
-		.try_for_each(|(a, b)| {
-			let similarity = Similarity::calculate(a.clone(), b);
-			let should_store = similarity.similar_enough_to_warrant_storing();
-			statistics.update_and_maybe_print(&a, should_store);
-			let database_pool = &database_pool;
-			async move {
-				if should_store {
-					database::upsert_similarity(similarity, database_pool).await?;
-				}
-
-				Ok(())
-			}
 		})
 		.await?;
 	Ok(())
