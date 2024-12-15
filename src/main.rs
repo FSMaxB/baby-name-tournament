@@ -70,7 +70,7 @@ impl Cli {
 				gtk::start(runtime, &database_pool)?;
 			}
 			CosmicGui => {
-				cosmic::start(&database_pool)?;
+				cosmic::start(database_pool)?;
 			}
 		}
 		Ok(())
