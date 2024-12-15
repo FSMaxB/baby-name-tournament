@@ -4,7 +4,7 @@ mod database_list_model;
 pub use database_list_manager::DatabaseListManager;
 pub use database_list_model::DatabaseListModel;
 
-use crate::gui::backend::Backend;
+use crate::gtk::backend::Backend;
 
 pub trait DatabaseView: 'static {
 	type Model: Model;
