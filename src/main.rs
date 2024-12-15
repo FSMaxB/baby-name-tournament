@@ -8,6 +8,7 @@ use std::future;
 use std::path::{Path, PathBuf};
 use tokio::runtime;
 
+mod cosmic;
 mod csv_parser;
 mod database;
 mod gtk;
@@ -38,6 +39,7 @@ enum Command {
 	ListAll { gender: Gender },
 	Random { gender: Gender },
 	GtkGui,
+	CosmicGui,
 }
 
 impl Cli {
@@ -66,6 +68,9 @@ impl Cli {
 			}
 			GtkGui => {
 				gtk::start(runtime, &database_pool)?;
+			}
+			CosmicGui => {
+				cosmic::start(&database_pool)?;
 			}
 		}
 		Ok(())
