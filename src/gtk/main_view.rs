@@ -1,9 +1,9 @@
 use crate::csv_parser::Gender;
 use crate::database::views::NameWithPreferences;
-use crate::gui::backend::Backend;
-use crate::gui::gender_dropdown::GenderDropdown;
-use crate::gui::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
-use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
+use crate::gtk::backend::Backend;
+use crate::gtk::gender_dropdown::GenderDropdown;
+use crate::gtk::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
+use crate::gtk::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
 use gtk::{prelude::*, Orientation};
 use relm4::{gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
 
