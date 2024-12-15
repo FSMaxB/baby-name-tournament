@@ -1,5 +1,5 @@
-use crate::gui::backend::Backend;
-use crate::gui::database_list::{DatabaseView, Model};
+use crate::gtk::backend::Backend;
+use crate::gtk::database_list::{DatabaseView, Model};
 use adw::glib;
 use anyhow::Context;
 use glib::BoxedAnyObject;
