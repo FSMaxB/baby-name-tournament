@@ -4,22 +4,24 @@ use cosmic::iced::Length;
 use cosmic::{widget, Application, Apply, Element};
 use sqlx::SqlitePool;
 
-pub fn start(_database_pool: &SqlitePool) -> anyhow::Result<()> {
+pub fn start(database_pool: SqlitePool) -> anyhow::Result<()> {
 	let settings =
 		cosmic::app::Settings::default().size_limits(cosmic::iced::Limits::NONE.min_width(480.0).min_height(640.0));
 
-	cosmic::app::run::<AppModel>(settings, ())?;
+	cosmic::app::run::<AppModel>(settings, database_pool)?;
 
 	Ok(())
 }
 
 pub struct AppModel {
 	core: Core,
+	#[expect(dead_code)]
+	database_pool: SqlitePool,
 }
 
 impl Application for AppModel {
 	type Executor = cosmic::executor::Default;
-	type Flags = ();
+	type Flags = SqlitePool;
 	type Message = ();
 
 	const APP_ID: &'static str = "de.maxbruckner.baby-name-tournament";
@@ -32,8 +34,8 @@ impl Application for AppModel {
 		&mut self.core
 	}
 
-	fn init(core: Core, (): Self::Flags) -> (Self, Task<Self::Message>) {
-		let model = Self { core };
+	fn init(core: Core, database_pool: Self::Flags) -> (Self, Task<Self::Message>) {
+		let model = Self { core, database_pool };
 
 		(model, Task::none())
 	}
