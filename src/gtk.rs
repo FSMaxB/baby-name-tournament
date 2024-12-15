@@ -1,4 +1,4 @@
-use crate::gui::runtime_thread::RuntimeThread;
+use crate::gtk::runtime_thread::RuntimeThread;
 use adw::{HeaderBar, prelude::*};
 use gtk::Orientation;
 use relm4::{
@@ -20,7 +20,7 @@ mod runtime_thread;
 
 use crate::database;
 use crate::database::views::NameWithPreference;
-use crate::gui::main_view::{MainView, MainViewInput, MainViewOutput};
+use crate::gtk::main_view::{MainView, MainViewInput, MainViewOutput};
 use backend::Backend;
 
 pub fn start(runtime: Runtime, database_pool: &SqlitePool) -> anyhow::Result<()> {

@@ -1,6 +1,6 @@
-use crate::gui::database_list::DatabaseView;
-use crate::gui::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
-use crate::gui::force_unwrapped_field::ForceUnwrappedField;
+use crate::gtk::database_list::DatabaseView;
+use crate::gtk::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
+use crate::gtk::force_unwrapped_field::ForceUnwrappedField;
 use adw::subclass::prelude::*;
 use adw::{gio, glib};
 use gio::{ListModel, prelude::*};

@@ -10,7 +10,7 @@ use tokio::runtime;
 
 mod csv_parser;
 mod database;
-mod gui;
+mod gtk;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
@@ -37,7 +37,7 @@ enum Command {
 	Ingest { name_list: PathBuf },
 	ListAll { gender: Gender },
 	Random { gender: Gender },
-	Gui,
+	GtkGui,
 }
 
 impl Cli {
@@ -64,8 +64,8 @@ impl Cli {
 				runtime.block_on(random(gender, database_pool.clone()))?;
 				runtime.block_on(database_pool.close());
 			}
-			Gui => {
-				gui::start(runtime, &database_pool)?;
+			GtkGui => {
+				gtk::start(runtime, &database_pool)?;
 			}
 		}
 		Ok(())

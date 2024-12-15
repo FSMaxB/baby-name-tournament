@@ -1,6 +1,6 @@
 use crate::database::views::NameWithPreference;
 use crate::database::{Name, NamePreference};
-use crate::gui::name_preference::{NamePreferenceInput, NamePreferenceView};
+use crate::gtk::name_preference::{NamePreferenceInput, NamePreferenceView};
 use gtk::prelude::*;
 use relm4::{
 	Component, ComponentController, ComponentParts, ComponentSender, Controller, Sender, SimpleComponent, gtk,
