@@ -34,7 +34,9 @@ impl Application for AppModel {
 		&mut self.core
 	}
 
-	fn init(core: Core, database_pool: Self::Flags) -> (Self, Task<Self::Message>) {
+	fn init(mut core: Core, database_pool: Self::Flags) -> (Self, Task<Self::Message>) {
+		"Baby Name Tournament".clone_into(&mut core.window.header_title);
+
 		let model = Self { core, database_pool };
 
 		(model, Task::none())
