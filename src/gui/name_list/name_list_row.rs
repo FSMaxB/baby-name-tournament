@@ -29,7 +29,7 @@ impl SimpleComponent for NameListRow {
 			gtk::Label {
 				set_use_markup: true,
 				#[watch]
-				set_label: &format!(r#"<big><b>{}</b></big>"#, model.name.name),
+				set_label: &format!(r"<big><b>{}</b></big>", model.name.name),
 			},
 
 			#[name(gender_label)]
