@@ -1,5 +1,5 @@
 use crate::csv_parser::Gender;
-use crate::database::views::NameWithPreferences;
+use crate::database::views::NameWithPreference;
 use crate::gui::backend::Backend;
 use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
@@ -19,7 +19,7 @@ pub struct MainView {
 #[derive(Debug)]
 pub enum MainViewInput {
 	GenderSelected(Gender),
-	NamePreferenceUpdated(NameWithPreferences),
+	NamePreferenceUpdated(NameWithPreference),
 	UpdateNamePreferenceFilter(PreferenceFilter),
 	UpdateSearchTerm(String),
 	RefreshRow { name: String },
@@ -27,7 +27,7 @@ pub enum MainViewInput {
 
 #[derive(Debug)]
 pub enum MainViewOutput {
-	NamePreferenceUpdated(NameWithPreferences),
+	NamePreferenceUpdated(NameWithPreference),
 }
 
 #[relm4::component(pub)]

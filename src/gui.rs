@@ -19,7 +19,7 @@ mod name_preference;
 mod runtime_thread;
 
 use crate::database;
-use crate::database::views::NameWithPreferences;
+use crate::database::views::NameWithPreference;
 use crate::gui::main_view::{MainView, MainViewInput, MainViewOutput};
 use backend::Backend;
 
@@ -43,7 +43,7 @@ struct Application {
 
 #[derive(Debug)]
 enum ApplicationMessage {
-	NamePreferenceUpdated(NameWithPreferences),
+	NamePreferenceUpdated(NameWithPreference),
 }
 
 #[relm4::component]
@@ -92,20 +92,22 @@ impl SimpleComponent for Application {
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		use ApplicationMessage::*;
 		match message {
-			NamePreferenceUpdated(NameWithPreferences {
-				name,
-				mother_preference,
-				father_preference,
-				..
-			}) => {
-				self.backend
-					.block_on_future(database::upsert_name_preference(
-						&name,
-						mother_preference,
-						father_preference,
-						self.backend.database_pool(),
-					))
-					.expect("Failed to update name preference");
+			NamePreferenceUpdated(NameWithPreference { name, preference, .. }) => {
+				match preference {
+					Some(preference) => {
+						self.backend
+							.block_on_future(database::upsert_name_preference(
+								&name,
+								preference,
+								self.backend.database_pool(),
+							))
+							.expect("Failed to update name preference");
+					}
+					None => self
+						.backend
+						.block_on_future(database::delete_name_preference(&name, self.backend.database_pool()))
+						.expect("Failed to delete name preference"),
+				}
 				let _ = self
 					.main_view_controller
 					.sender()

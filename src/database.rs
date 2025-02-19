@@ -154,25 +154,34 @@ pub async fn read_random(gender: Gender, database_pool: &SqlitePool) -> sqlx::Re
 
 pub async fn upsert_name_preference(
 	name: &str,
-	mother_preference: Option<NamePreference>,
-	father_preference: Option<NamePreference>,
+	preference: NamePreference,
 	database_pool: &SqlitePool,
 ) -> sqlx::Result<()> {
 	sqlx::query!(
 		r#"
-		INSERT INTO parent_name_preferences (
+		INSERT INTO name_preference (
 			name,
-			mother_preference,
-			father_preference
-		) VALUES ($1, $2, $3)
+			preference
+		) VALUES ($1, $2)
 		ON CONFLICT DO UPDATE
 		SET
-			mother_preference = $2,
-			father_preference = $3
+			preference = $2
 		"#,
 		name,
-		mother_preference,
-		father_preference,
+		preference,
+	)
+	.execute(database_pool)
+	.await?;
+	Ok(())
+}
+
+pub async fn delete_name_preference(name: &str, database_pool: &SqlitePool) -> sqlx::Result<()> {
+	sqlx::query!(
+		r#"
+		DELETE FROM name_preference
+		WHERE name = $1
+		"#,
+		name,
 	)
 	.execute(database_pool)
 	.await?;

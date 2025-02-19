@@ -1,6 +1,6 @@
 use crate::csv_parser::Gender;
 use crate::database;
-use crate::database::views::NameWithPreferences;
+use crate::database::views::NameWithPreference;
 use crate::database::Name;
 use crate::gui::backend::Backend;
 use crate::gui::database_list::{DatabaseListManager, DatabaseListModel, DatabaseView, Model};
@@ -21,14 +21,14 @@ mod name_list_row;
 
 pub struct NameList<VIEW: DatabaseView> {
 	list_manager: DatabaseListManager<VIEW>,
-	selected_names: Vec<NameWithPreferences>,
+	selected_names: Vec<NameWithPreference>,
 	selected_names_row_controller: Controller<NameListRow>,
 }
 
 #[relm4::component(pub)]
 impl<VIEW> SimpleComponent for NameList<VIEW>
 where
-	VIEW: DatabaseView<Model = NameWithPreferences> + Default + Clone,
+	VIEW: DatabaseView<Model = NameWithPreference> + Default + Clone,
 	VIEW::Filter: Debug,
 {
 	type Input = NameListInput<VIEW::Filter>;
@@ -80,8 +80,7 @@ where
 					name: "-".to_owned(),
 					gender: Gender::Both,
 				},
-				mother_preference: None,
-				father_preference: None,
+				preference: None,
 			})
 			.forward(sender.input_sender(), |message| match message {
 				NameListRowOutput::NamePreferenceSet(name_with_preferences) => {
@@ -105,8 +104,7 @@ where
 							name: "{none}".to_owned(),
 							gender: Gender::Both,
 						},
-						mother_preference: None,
-						father_preference: None,
+						preference: None,
 					})
 					.forward(sender.input_sender(), |output| match output {
 						NameListRowOutput::NamePreferenceSet(name_with_preferences) => {
@@ -130,7 +128,7 @@ where
 					.expect("Missing item")
 					.downcast::<BoxedAnyObject>()
 					.expect("Incorrect Type");
-				let name_with_preferences = item.borrow::<NameWithPreferences>();
+				let name_with_preferences = item.borrow::<NameWithPreference>();
 
 				let _ = controller
 					.sender()
@@ -189,18 +187,13 @@ where
 			NamePreferenceUpdated(name_with_preferences) => {
 				let _ = sender.output(NameListOutput::NamePreferenceUpdated(name_with_preferences));
 			}
-			MultiselectionPreferenceUpdated(NameWithPreferences {
-				mother_preference,
-				father_preference,
-				..
-			}) => {
+			MultiselectionPreferenceUpdated(NameWithPreference { preference, .. }) => {
 				// TODO: Don't destroy the existing selection when applying the value
-				for NameWithPreferences { name, gender, .. } in &self.selected_names {
-					let _ = sender.output(NameListOutput::NamePreferenceUpdated(NameWithPreferences {
+				for NameWithPreference { name, gender, .. } in &self.selected_names {
+					let _ = sender.output(NameListOutput::NamePreferenceUpdated(NameWithPreference {
 						name: name.clone(),
 						gender: *gender,
-						mother_preference,
-						father_preference,
+						preference,
 					}));
 				}
 			}
@@ -211,11 +204,10 @@ where
 					let _ = self
 						.selected_names_row_controller
 						.sender()
-						.send(NameListRowInput::SetName(NameWithPreferences {
+						.send(NameListRowInput::SetName(NameWithPreference {
 							name: format!("{count} selected names"),
 							gender: Gender::Both,
-							mother_preference: None,
-							father_preference: None,
+							preference: None,
 						}));
 				}
 			}
@@ -231,15 +223,15 @@ where
 #[derive(Debug)]
 pub enum NameListInput<FILTER> {
 	UpdateFilter(FILTER),
-	NamePreferenceUpdated(NameWithPreferences),
-	MultiselectionPreferenceUpdated(NameWithPreferences),
-	SelectionChanged(Vec<NameWithPreferences>),
+	NamePreferenceUpdated(NameWithPreference),
+	MultiselectionPreferenceUpdated(NameWithPreference),
+	SelectionChanged(Vec<NameWithPreference>),
 	RefreshRow { name: String },
 }
 
 #[derive(Debug)]
 pub enum NameListOutput {
-	NamePreferenceUpdated(NameWithPreferences),
+	NamePreferenceUpdated(NameWithPreference),
 }
 
 #[derive(Clone, Default)]
@@ -267,7 +259,7 @@ impl Default for NameListViewFilter {
 }
 
 impl DatabaseView for NameListView {
-	type Model = NameWithPreferences;
+	type Model = NameWithPreference;
 	type Filter = NameListViewFilter;
 
 	fn read_all(
@@ -296,7 +288,7 @@ impl DatabaseView for NameListView {
 	}
 }
 
-impl Model for NameWithPreferences {
+impl Model for NameWithPreference {
 	type Key = String;
 
 	fn unique_key(&self) -> &Self::Key {

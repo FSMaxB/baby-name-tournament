@@ -3,25 +3,23 @@ use crate::database::NamePreference;
 use sqlx::SqlitePool;
 
 #[derive(Clone, Debug)]
-pub struct NameWithPreferences {
+pub struct NameWithPreference {
 	pub name: String,
 	pub gender: Gender,
-	pub mother_preference: Option<NamePreference>,
-	pub father_preference: Option<NamePreference>,
+	pub preference: Option<NamePreference>,
 }
 
-pub async fn read_one(name: &str, database_pool: &SqlitePool) -> sqlx::Result<NameWithPreferences> {
+pub async fn read_one(name: &str, database_pool: &SqlitePool) -> sqlx::Result<NameWithPreference> {
 	sqlx::query_as!(
-		NameWithPreferences,
+		NameWithPreference,
 		r#"
 		SELECT
 			names.name as "name!",
 			gender as "gender!: Gender",
-			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
-			parent_name_preferences.father_preference as "father_preference: NamePreference"
+			name_preference.preference as "preference?: NamePreference"
 		FROM names
-			LEFT JOIN parent_name_preferences ON
-				names.name = parent_name_preferences.name
+			LEFT JOIN name_preference ON
+				names.name = name_preference.name
 		WHERE
 			names.name = $1
 		"#,
@@ -38,18 +36,17 @@ pub async fn read_all_names(
 	include_undecided: bool,
 	name_contains: Option<&str>,
 	database_pool: &SqlitePool,
-) -> sqlx::Result<Vec<NameWithPreferences>> {
+) -> sqlx::Result<Vec<NameWithPreference>> {
 	sqlx::query_as!(
-		NameWithPreferences,
+		NameWithPreference,
 		r#"
 		SELECT
 			names.name as "name!",
 			gender as "gender!: Gender",
-			parent_name_preferences.mother_preference as "mother_preference: NamePreference",
-			parent_name_preferences.father_preference as "father_preference: NamePreference"
+			name_preference.preference as "preference: NamePreference"
 		FROM names
-		LEFT JOIN parent_name_preferences
-			ON names.name = parent_name_preferences.name
+		LEFT JOIN name_preference
+			ON names.name = name_preference.name
 		WHERE
 			CASE $1
 				WHEN 'both' THEN TRUE
@@ -57,9 +54,9 @@ pub async fn read_all_names(
 				WHEN 'male' THEN gender != 'female'
 			END
 			AND (
-				($2 AND (mother_preference = 'favorite' OR father_preference = 'favorite'))
-				OR ($3 AND (mother_preference = 'no_go' OR father_preference = 'no_go'))
-				OR ($4 AND (parent_name_preferences.name IS NULL OR (parent_name_preferences.mother_preference IS NULL AND parent_name_preferences.father_preference IS NULL)))
+				($2 AND preference = 'favorite')
+				OR ($3 AND preference = 'no_go')
+				OR ($4 AND preference IS NULL)
 			)
 			AND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))
 		ORDER BY names.name ASC
