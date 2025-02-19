@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tINSERT INTO name_preference (\n\t\t\tname,\n\t\t\tpreference\n\t\t) VALUES ($1, $2)\n\t\tON CONFLICT DO UPDATE\n\t\tSET\n\t\t\tpreference = $2\n\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1aebb982bd3ed565b2fc1afbcf7ada8d533877b20b4e4219fad17e2d35f6e2d6"
+}

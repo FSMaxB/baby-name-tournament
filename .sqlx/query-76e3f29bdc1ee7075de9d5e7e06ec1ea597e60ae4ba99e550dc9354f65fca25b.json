@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tSELECT\n\t\t\tnames.name as \"name!\",\n\t\t\tgender as \"gender!: Gender\",\n\t\t\tname_preference.preference as \"preference?: NamePreference\"\n\t\tFROM names\n\t\t\tLEFT JOIN name_preference ON\n\t\t\t\tnames.name = name_preference.name\n\t\tWHERE\n\t\t\tnames.name = $1\n\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "name!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "gender!: Gender",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "preference?: NamePreference",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "76e3f29bdc1ee7075de9d5e7e06ec1ea597e60ae4ba99e550dc9354f65fca25b"
+}

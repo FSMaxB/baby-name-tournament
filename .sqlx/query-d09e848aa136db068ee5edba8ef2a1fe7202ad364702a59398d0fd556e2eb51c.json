@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\tSELECT\n\t\t\tnames.name as \"name!\",\n\t\t\tgender as \"gender!: Gender\",\n\t\t\tname_preference.preference as \"preference: NamePreference\"\n\t\tFROM names\n\t\tLEFT JOIN name_preference\n\t\t\tON names.name = name_preference.name\n\t\tWHERE\n\t\t\tCASE $1\n\t\t\t\tWHEN 'both' THEN TRUE\n\t\t\t\tWHEN 'female' THEN gender != 'male'\n\t\t\t\tWHEN 'male' THEN gender != 'female'\n\t\t\tEND\n\t\t\tAND (\n\t\t\t\t($2 AND preference = 'favorite')\n\t\t\t\tOR ($3 AND preference = 'no_go')\n\t\t\t\tOR ($4 AND preference IS NULL)\n\t\t\t)\n\t\t\tAND ($5 IS NULL OR (names.name LIKE ('%' || $5 || '%')))\n\t\tORDER BY names.name ASC\n\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "name!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "gender!: Gender",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "preference: NamePreference",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d09e848aa136db068ee5edba8ef2a1fe7202ad364702a59398d0fd556e2eb51c"
+}
