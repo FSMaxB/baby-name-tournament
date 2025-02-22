@@ -1,7 +1,7 @@
 use crate::csv_parser::{Gender, NameRecord};
-use futures_util::{stream, Stream, TryStreamExt};
-use sqlx::sqlite::{SqliteAutoVacuum, SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+use futures_util::{Stream, TryStreamExt, stream};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteAutoVacuum, SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use std::path::Path;
 
 pub async fn initialize(path: &Path) -> anyhow::Result<SqlitePool> {
@@ -93,7 +93,7 @@ pub enum NamePreference {
 	NoGo,
 }
 
-pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> {
+pub fn list_all(gender: Gender, database_pool: &SqlitePool) -> impl Stream<Item = sqlx::Result<Name>> + use<> {
 	const BULK_SIZE: i64 = 10;
 	let database_pool = database_pool.clone();
 	stream::try_unfold(String::new(), move |names_after| {

@@ -1,7 +1,7 @@
 use crate::database::NamePreference;
 use gtk::prelude::*;
 use gtk::{Align, Orientation};
-use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{ComponentParts, ComponentSender, SimpleComponent, gtk};
 
 pub struct NamePreferenceView {
 	preference: Option<NamePreference>,

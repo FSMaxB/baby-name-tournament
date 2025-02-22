@@ -1,6 +1,6 @@
 use crate::csv_parser::Gender;
 use gtk::prelude::*;
-use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{ComponentParts, ComponentSender, SimpleComponent, gtk};
 use strum::VariantNames;
 
 pub struct GenderDropdown;

@@ -1,5 +1,5 @@
-use gtk::{prelude::*, Align, Orientation};
-use relm4::{gtk, ComponentParts, ComponentSender, SimpleComponent};
+use gtk::{Align, Orientation, prelude::*};
+use relm4::{ComponentParts, ComponentSender, SimpleComponent, gtk};
 
 #[expect(clippy::struct_field_names)]
 pub struct PreferenceFilterComponent {
