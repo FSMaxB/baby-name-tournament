@@ -1,4 +1,4 @@
-use crate::csv_parser::{Gender, parse_csv};
+use crate::csv_parser::{parse_csv, Gender};
 use crate::utils::stream_blocking_iterator;
 use anyhow::Context;
 use clap::Parser;

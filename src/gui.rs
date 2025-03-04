@@ -1,8 +1,8 @@
 use crate::gui::runtime_thread::RuntimeThread;
-use adw::{HeaderBar, prelude::*};
+use adw::{prelude::*, HeaderBar};
 use gtk::Orientation;
 use relm4::{
-	Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp, SimpleComponent, adw, gtk,
+	adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp, SimpleComponent,
 };
 use sqlx::SqlitePool;
 use tokio::runtime::Runtime;

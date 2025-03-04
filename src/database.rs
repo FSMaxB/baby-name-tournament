@@ -1,7 +1,7 @@
 use crate::csv_parser::{Gender, NameRecord};
-use futures_util::{Stream, TryStreamExt, stream};
-use sqlx::SqlitePool;
+use futures_util::{stream, Stream, TryStreamExt};
 use sqlx::sqlite::{SqliteAutoVacuum, SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+use sqlx::SqlitePool;
 use std::path::Path;
 
 pub async fn initialize(path: &Path) -> anyhow::Result<SqlitePool> {

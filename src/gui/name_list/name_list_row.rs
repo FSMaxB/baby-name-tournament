@@ -3,7 +3,7 @@ use crate::database::{Name, NamePreference};
 use crate::gui::name_preference::{NamePreferenceInput, NamePreferenceView};
 use gtk::prelude::*;
 use relm4::{
-	Component, ComponentController, ComponentParts, ComponentSender, Controller, Sender, SimpleComponent, gtk,
+	gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, Sender, SimpleComponent,
 };
 
 pub struct NameListRow {
