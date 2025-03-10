@@ -1,10 +1,10 @@
-use crate::gui::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
 use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::database_list_manager::{DatabaseListManager, DynamicListManager};
 use crate::gui::force_unwrapped_field::ForceUnwrappedField;
 use adw::subclass::prelude::*;
 use adw::{gio, glib};
-use gio::{prelude::*, ListModel};
-use glib::{clone, BoxedAnyObject, Type};
+use gio::{ListModel, prelude::*};
+use glib::{BoxedAnyObject, Type, clone};
 use relm4::adw;
 
 #[derive(Default)]
