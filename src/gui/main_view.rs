@@ -4,8 +4,8 @@ use crate::gui::backend::Backend;
 use crate::gui::gender_dropdown::GenderDropdown;
 use crate::gui::main_view::preference_filter::{PreferenceFilter, PreferenceFilterComponent, PreferenceFilterOutput};
 use crate::gui::name_list::{NameList, NameListInput, NameListOutput, NameListView, NameListViewFilter};
-use gtk::{prelude::*, Orientation};
-use relm4::{gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent};
+use gtk::{Orientation, prelude::*};
+use relm4::{Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent, gtk};
 
 mod preference_filter;
 

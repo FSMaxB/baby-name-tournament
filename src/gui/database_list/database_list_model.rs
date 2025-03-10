@@ -1,5 +1,5 @@
-use crate::gui::database_list::database_list_manager::DatabaseListManager;
 use crate::gui::database_list::DatabaseView;
+use crate::gui::database_list::database_list_manager::DatabaseListManager;
 use adw::subclass::prelude::*;
 use adw::{gio, glib};
 use glib::Object;
