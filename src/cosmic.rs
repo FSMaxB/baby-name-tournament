@@ -1,7 +1,7 @@
 use cosmic::app::{Core, Task};
-use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::Length;
-use cosmic::{widget, Application, Apply, Element};
+use cosmic::iced::window::Id;
+use cosmic::iced::{Alignment, Length};
+use cosmic::{Application, ApplicationExt, Element, task, widget};
 use sqlx::SqlitePool;
 
 pub fn start(database_pool: SqlitePool) -> anyhow::Result<()> {
@@ -15,14 +15,14 @@ pub fn start(database_pool: SqlitePool) -> anyhow::Result<()> {
 
 pub struct AppModel {
 	core: Core,
-	#[expect(dead_code)]
+	counter: i8,
 	database_pool: SqlitePool,
 }
 
 impl Application for AppModel {
 	type Executor = cosmic::executor::Default;
 	type Flags = SqlitePool;
-	type Message = ();
+	type Message = Message;
 
 	const APP_ID: &'static str = "de.maxbruckner.baby-name-tournament";
 
@@ -34,21 +34,79 @@ impl Application for AppModel {
 		&mut self.core
 	}
 
-	fn init(mut core: Core, database_pool: Self::Flags) -> (Self, Task<Self::Message>) {
-		"Baby Name Tournament".clone_into(&mut core.window.header_title);
+	fn init(core: Core, database_pool: Self::Flags) -> (Self, Task<Self::Message>) {
+		let mut model = Self {
+			core,
+			counter: 0,
+			database_pool,
+		};
 
-		let model = Self { core, database_pool };
+		let title = "Baby Name Tournament".to_owned();
+		model.set_header_title(title.clone());
+		let task = model.set_window_title(title.clone());
 
-		(model, Task::none())
+		(model, task)
+	}
+
+	fn on_close_requested(&self, id: Id) -> Option<Self::Message> {
+		if id != self.core.main_window_id()? {
+			return None;
+		}
+
+		Some(Message::ClosePool)
+	}
+
+	fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+		use Message::*;
+		match message {
+			Increase => {
+				self.counter = self.counter.saturating_add(1);
+			}
+			Decrease => {
+				self.counter = self.counter.saturating_sub(1);
+			}
+			ClosePool => {
+				return task::future({
+					let database_pool = self.database_pool.clone();
+					async move {
+						// TODO: Somehow make sure this actually runs, because it apparently doesn't right now
+						database_pool.close().await;
+						Nothing
+					}
+				});
+			}
+			Nothing => {}
+		}
+
+		Task::none()
 	}
 
 	fn view(&self) -> Element<Self::Message> {
-		widget::text::title1("Hello, world!")
-			.apply(widget::container)
+		let increase_button = widget::button::standard("+").on_press(Message::Increase);
+		let count = widget::text::title1(self.counter.to_string())
+			.width(Length::Fill)
+			.align_x(Alignment::Center);
+		let decrease_button = widget::button::standard("-").on_press(Message::Decrease);
+
+		let counter_assembly = widget::column()
+			.push(increase_button)
+			.push(count)
+			.push(decrease_button)
+			.width(Length::Fixed(50.0));
+
+		widget::container(counter_assembly)
 			.width(Length::Fill)
 			.height(Length::Fill)
-			.align_x(Horizontal::Center)
-			.align_y(Vertical::Center)
+			.align_x(Alignment::Center)
+			.align_y(Alignment::Center)
 			.into()
 	}
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Message {
+	Increase,
+	Decrease,
+	ClosePool,
+	Nothing,
 }
