@@ -1,8 +1,13 @@
 use cosmic::app::{Core, Task};
 use cosmic::iced::window::Id;
 use cosmic::iced::{Alignment, Length};
+use cosmic::widget::Icon;
+use cosmic::widget::table::{Entity, ItemCategory, ItemInterface, MultiSelectModel, MultiSelectTableView};
 use cosmic::{Application, ApplicationExt, Element, task, widget};
 use sqlx::SqlitePool;
+use std::borrow::Cow;
+use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 
 pub fn start(database_pool: SqlitePool) -> anyhow::Result<()> {
 	let settings =
@@ -16,6 +21,8 @@ pub fn start(database_pool: SqlitePool) -> anyhow::Result<()> {
 pub struct AppModel {
 	core: Core,
 	counter: i8,
+	next_list_entry: usize,
+	list_model: MultiSelectModel<ListItem, ListCategory>,
 	database_pool: SqlitePool,
 }
 
@@ -38,6 +45,8 @@ impl Application for AppModel {
 		let mut model = Self {
 			core,
 			counter: 0,
+			next_list_entry: 0,
+			list_model: MultiSelectModel::new(vec![ListCategory]),
 			database_pool,
 		};
 
@@ -76,6 +85,18 @@ impl Application for AppModel {
 				});
 			}
 			Nothing => {}
+			AddListEntry => {
+				let _ = self.list_model.insert(self.next_list_entry.into());
+				self.next_list_entry += 1;
+			}
+			ListEntrySelected(selected_entry) => {
+				self.list_model.activate(selected_entry);
+				println!("Selected items:");
+				for selected in self.list_model.active() {
+					let ListItem(count) = self.list_model.item(selected).expect("Invalid item selected");
+					println!("{count}");
+				}
+			}
 		}
 
 		Task::none()
@@ -88,10 +109,16 @@ impl Application for AppModel {
 			.align_x(Alignment::Center);
 		let decrease_button = widget::button::standard("-").on_press(Message::Decrease);
 
+		let add_list_entry_button = widget::button::standard("Add list entry").on_press(Message::AddListEntry);
+
+		let list = MultiSelectTableView::new(&self.list_model).on_item_left_click(Message::ListEntrySelected);
+
 		let counter_assembly = widget::column()
 			.push(increase_button)
 			.push(count)
 			.push(decrease_button)
+			.push(add_list_entry_button)
+			.push(list)
 			.width(Length::Fixed(50.0));
 
 		widget::container(counter_assembly)
@@ -103,10 +130,49 @@ impl Application for AppModel {
 	}
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
 	Increase,
 	Decrease,
 	ClosePool,
 	Nothing,
+	AddListEntry,
+	ListEntrySelected(Entity),
+}
+
+struct ListItem(usize);
+
+impl ItemInterface<ListCategory> for ListItem {
+	fn get_icon(&self, _: ListCategory) -> Option<Icon> {
+		None
+	}
+
+	fn get_text(&self, _: ListCategory) -> Cow<'static, str> {
+		self.0.to_string().into()
+	}
+
+	fn compare(&self, other: &Self, _: ListCategory) -> Ordering {
+		self.0.cmp(&other.0)
+	}
+}
+
+impl From<usize> for ListItem {
+	fn from(value: usize) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+struct ListCategory;
+
+impl Display for ListCategory {
+	fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(formatter, "List")
+	}
+}
+
+impl ItemCategory for ListCategory {
+	fn width(&self) -> Length {
+		Length::Fixed(100.0)
+	}
 }
