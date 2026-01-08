@@ -76,6 +76,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
       - name: Cargo deny
-        uses: EmbarkStudios/cargo-deny-action@v2.0.14
+        uses: EmbarkStudios/cargo-deny-action@v2.0.15
         with:
           command: check bans licenses sources advisories
